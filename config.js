@@ -1,5 +1,5 @@
 const CONFIG = {
-  grid: { rows: 8, cols: 8, cellSize: 64 },
+  grid: { rows: 9, cols: 9, cellSize: 64 },   // 9×9
   resources: {
     hay: { name: '牧草', emoji: '🌿' },
     corn: { name: '玉米', emoji: '🌽' },
@@ -78,6 +78,7 @@ const CONFIG = {
   infiniteLevel: {
     initialResources: { hay: 100, corn: 80, meatEgg: 0, meat: 0 },
     initialGold: 0,
+    // 農田圍繞中央農舍 (4,4) 的八格
     farmPlots: [
       { row: 3, col: 3, resource: 'corn' },
       { row: 3, col: 4, resource: 'hay' },

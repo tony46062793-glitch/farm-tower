@@ -22,7 +22,6 @@ class Game {
     this.lastTimestamp = 0;
 
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
-
     this.cellSize = this.config.grid.cellSize;
 
     this.loadPlayerData();
@@ -87,7 +86,6 @@ class Game {
     this.updateShopItems();
   }
 
-  // ── 建築按鈕（含詳細提示） ──
   createBuildButtons() {
     this.buildButtonsEl.innerHTML = '';
     for (let key in this.config.buildings) {
@@ -96,35 +94,27 @@ class Game {
       btn.textContent = `${b.emoji} ${b.name}`;
       btn.dataset.buildingId = b.id;
 
-      // 組裝提示文字
       let tip = `${b.name}`;
       if (b.attack > 0) {
         tip += `\n攻擊力：${b.attack}`;
         tip += `\n攻擊速度：${b.attackSpeed}/秒`;
       }
-      if (b.range) {
-        tip += `\n攻擊範圍：${b.range} px`;
-      }
+      if (b.range) tip += `\n攻擊範圍：${b.range} px`;
       let costStr = [];
-      for (let res in b.cost) {
-        costStr.push(`${this.config.resources[res].emoji} ${b.cost[res]}`);
-      }
+      for (let res in b.cost) costStr.push(`${this.config.resources[res].emoji} ${b.cost[res]}`);
       tip += `\n消耗：${costStr.join('，')}`;
-      if (b.special) {
-        tip += `\n特殊：${b.special}`;
-      }
-      if (b.effect === 'globalAttack+2') {
-        tip += `\n效果：全體攻擊 +2`;
+      if (b.special) tip += `\n特殊：${b.special}`;
+      if (b.effect === 'globalAttack+1' || b.effect === 'globalAttack+2') {
+        tip += `\n效果：全體攻擊 +${b.effect.slice(-1)}`;
       }
       if (b.unlocks) {
-        const unlockedBuilding = this.config.buildings[b.unlocks];
-        tip += `\n解鎖：${unlockedBuilding ? unlockedBuilding.name : b.unlocks}`;
+        const unlocked = this.config.buildings[b.unlocks];
+        tip += `\n解鎖：${unlocked ? unlocked.name : b.unlocks}`;
       }
       if (b.unlockRequirement) {
-        const reqBuilding = this.config.buildings[b.unlockRequirement];
-        tip += `\n前置建築：${reqBuilding ? reqBuilding.name : b.unlockRequirement}`;
+        const req = this.config.buildings[b.unlockRequirement];
+        tip += `\n前置建築：${req ? req.name : b.unlockRequirement}`;
       }
-
       btn.title = tip;
 
       btn.addEventListener('click', (e) => {
@@ -135,7 +125,6 @@ class Game {
     }
   }
 
-  // ── 資源購買按鈕 ──
   createResourceButtons() {
     this.resourceButtonsEl.innerHTML = '';
     const order = ['hay', 'corn', 'meatEgg', 'meat'];
@@ -525,7 +514,7 @@ class Game {
 
     this.updateMice(delta);
     this.buildingAttack(now);
-    this.ferretClearInnerHoles();
+    this.ferretClearInnerHoles(now);   // 傳入 now
 
     this.gameLoopId = requestAnimationFrame((t) => this.gameLoop(t));
   }
@@ -692,22 +681,19 @@ class Game {
     this.mice.splice(index, 1);
   }
 
-ferretClearInnerHoles(now) {
+  // ── 貂洞摧毀內部洞（含冷卻） ──
+  ferretClearInnerHoles(now) {
     const ferretDef = this.config.buildings.ferretDen;
-    const range = ferretDef.ferretRange;
-    // 冷卻時間（秒）從 config 讀取，如果沒有就給一個超大值 (但我們用 attackSpeed 表示冷卻)
-    const cooldown = ferretDef.attackSpeed || 0.5; // 預設 0.5 秒
+    const range = ferretDef.ferretRange;       // 4 格
+    const cooldown = (ferretDef.attackSpeed || 0.5) * 1000; // 轉為毫秒
 
     for (let building of this.buildings) {
       if (building.type !== 'ferretDen') continue;
 
-      // 初始化 lastClearTime
       if (building.lastClearTime === undefined) {
         building.lastClearTime = 0;
       }
-
-      // 檢查冷卻
-      if (now - building.lastClearTime < cooldown * 1000) continue;
+      if (now - building.lastClearTime < cooldown) continue; // 冷卻中
 
       let cleared = false;
       for (let i = this.mouseHoles.length - 1; i >= 0; i--) {
@@ -717,24 +703,23 @@ ferretClearInnerHoles(now) {
           hole.hp = 0;
           this.removeInnerHole(hole);
           cleared = true;
-          break; // 每次冷卻只摧毀一個洞（若希望一次清多個，可以去掉 break）
+          break; // 每次冷卻只摧毀一個洞
         }
       }
-
       if (cleared) {
         building.lastClearTime = now;
         this.showMessage('🦦 貂洞摧毀了一個老鼠洞！');
       }
     }
-  },
-  
+  }
+
   buildingAttack(now) {
     const globalAtk = this.getGlobalAttackBonus();
     const hasDog = this.buildings.some(b => b.type === 'dogHouse');
     const hasFerret = this.buildings.some(b => b.type === 'ferretDen');
     let extraAtk = 0;
-    if (hasDog) extraAtk += 2;
-    if (hasFerret) extraAtk += 2;
+    if (hasDog) extraAtk += 1;   // 犬窩 +1
+    if (hasFerret) extraAtk += 2; // 貂洞 +2
     const totalBonus = globalAtk + extraAtk;
 
     for (let building of this.buildings) {

@@ -29,40 +29,57 @@ body {
   gap: 20px;
 }
 
-/* 左側資源欄 */
+/* ── 左側資源欄：切成 9 行對齊棋盤 ── */
 #left-panel {
   width: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-rows: repeat(9, 64px); /* 9 行，每行 64px */
+  grid-template-columns: 1fr;
+  height: 576px;             /* 與棋盤等高 */
   flex-shrink: 0;
+  gap: 0;
 }
 
+/* 資源卡片無圓角、無邊距，完全貼合格子 */
 .resource-card {
   background: #fffde7;
-  border: 2px solid #d7ccc8;
-  border-radius: 10px;
-  padding: 10px;
-  text-align: center;
+  border: 1px solid #a5d6a7; /* 與格線同色系 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   font-weight: bold;
   color: #3e2723;
+  margin: 0;
+  padding: 4px;
 }
-.resource-card span.emoji { font-size: 28px; display: block; margin-bottom: 4px; }
-.resource-card .value { font-size: 18px; }
-.resource-card small { font-size: 12px; color: #795548; display: block; }
 
+.resource-card span.emoji { font-size: 24px; }
+.resource-card .value { font-size: 16px; }
+.resource-card small { font-size: 11px; color: #795548; }
+
+/* 將各資源卡固定在特定行（與棋盤內部對齊） */
+.resource-card:nth-child(1) { grid-row: 2; } /* 牧草 */
+.resource-card:nth-child(2) { grid-row: 3; } /* 玉米 */
+.resource-card:nth-child(3) { grid-row: 4; } /* 肉蛋 */
+.resource-card:nth-child(4) { grid-row: 5; } /* 肉食 */
+.resource-card:nth-child(5) { grid-row: 6; } /* 金幣 */
+
+/* 計時器放在第 8 行 */
 #timer-display {
-  margin-top: auto;
+  grid-row: 8;
   background: #3e2723;
   color: #ffcc80;
-  font-size: 20px;
-  padding: 12px;
-  border-radius: 10px;
-  text-align: center;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: monospace;
+  margin: 0;
+  border: 1px solid #a5d6a7;
 }
 
-/* 中間區域 */
+/* ── 中間區域 ── */
 #center-area {
   flex-grow: 1;
   display: flex;
@@ -71,10 +88,11 @@ body {
   justify-content: center;
 }
 
+/* 棋盤強制 9x9 (576px) */
 #game-board {
   position: relative;
-  width: 576px;
-  height: 576px;
+  width: 576px !important;
+  height: 576px !important;
   background: #c8e6c9;
   border: 2px solid #6d4c41;
   border-radius: 8px;
@@ -83,6 +101,7 @@ body {
   cursor: crosshair;
 }
 
+/* 格線 */
 #game-board::before {
   content: "";
   position: absolute;
@@ -146,7 +165,7 @@ body {
   transition: width 0.2s;
 }
 
-/* 右側操作欄 */
+/* ── 右側操作欄 ── */
 #right-panel {
   width: 160px;
   display: flex;
@@ -263,32 +282,32 @@ button.selected {
 <body>
 
 <div id="game-container">
-  <!-- 左側資源 -->
+  <!-- 左側資源（格線對齊） -->
   <div id="left-panel">
     <div class="resource-card">
       <span class="emoji">🌿</span>
-      <small>牧草</small>
       <span class="value" id="res-hay">0</span>
+      <small>牧草</small>
     </div>
     <div class="resource-card">
       <span class="emoji">🌽</span>
-      <small>玉米</small>
       <span class="value" id="res-corn">0</span>
+      <small>玉米</small>
     </div>
     <div class="resource-card">
       <span class="emoji">🥚</span>
-      <small>肉蛋</small>
       <span class="value" id="res-meatEgg">0</span>
+      <small>肉蛋</small>
     </div>
     <div class="resource-card">
       <span class="emoji">🍖</span>
-      <small>肉食</small>
       <span class="value" id="res-meat">0</span>
+      <small>肉食</small>
     </div>
-    <div class="resource-card" style="background: #fff8e1; border-color: #fbc02d;">
+    <div class="resource-card" style="background: #fff8e1;">
       <span class="emoji">💰</span>
-      <small>金幣</small>
       <span class="value" id="res-gold">0</span>
+      <small>金幣</small>
     </div>
     <div id="timer-display">⏱️ <span id="timer">00:00</span></div>
   </div>

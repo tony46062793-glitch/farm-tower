@@ -64,6 +64,7 @@ const CONFIG = {
       hp: 60,
       attack: 0,        // 加上這行
       attackSpeed: 0.5, 
+      range: 400, 
       effect: 'globalAttack+2',
       special: '摧毀範圍內的老鼠洞',   // 主要功能
       ferretRange: 4,        // 摧毀洞的範圍（格子數）

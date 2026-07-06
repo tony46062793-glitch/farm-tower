@@ -72,8 +72,7 @@ const CONFIG = {
     emoji: '🕳️',
     hp: 30,
     spawnInterval: 5,
-    initialSpawnDelay: 2,
-    spawnTypes: ['normal']
+    initialSpawnDelay: 2
   },
   infiniteLevel: {
     initialResources: { hay: 100, corn: 80, meatEgg: 0, meat: 0 },
@@ -89,19 +88,19 @@ const CONFIG = {
       { row: 5, col: 5, resource: 'corn' }
     ],
     farmhouse: { row: 4, col: 4 },
-    outerSpawnInterval: 4,
-    innerHoleSpawnInterval: 15,
+    outerHoleMax: 4,                 // 外圈洞上限
+    outerHoleSpawnInterval: 8,      // 每隔幾秒嘗試生成一個外圈洞
+    innerHoleSpawnInterval: 15,     // 內部洞生成檢查間隔
     innerHoleMax: 3,
     spawn: {
-      normal: { speed: 1.0, hp: 20 },   // 速度降低為 1.0 格/秒
+      normal: { speed: 1.0, hp: 20 },
       fast: { speed: 1.5, hp: 15 }
     },
-    // 老鼠攻擊參數
     mouseAttack: {
-      buildingDamage: 10,         // 每次攻擊對建築的傷害
-      farmSteal: 5,               // 每次偷取資源量
-      attackInterval: 0.8,        // 攻擊間隔（秒）
-      maxFarmStay: 3              // 在農田最多停留秒數（避免資源被偷光）
+      buildingDamage: 10,
+      farmSteal: 5,
+      attackInterval: 0.8,
+      maxFarmStay: 3
     },
     difficultyScale: {
       hpIncreasePerMinute: 2,

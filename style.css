@@ -19,7 +19,7 @@ body {
   border: 4px solid #8b5a2b;
   border-radius: 16px;
   padding: 16px;
-  width: 580px;
+  width: 580px;               /* 稍微放寬以容納 8x8 */
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
@@ -35,13 +35,13 @@ body {
 
 #game-board {
   position: relative;
-  width: 512px;
-  height: 512px;
+  width: 512px;               /* 8 * 64 */
+  height: 512px;              /* 8 * 64 */
   margin: 0 auto;
   background: #c8e6c9;
   border: 2px solid #6d4c41;
   border-radius: 8px;
-  overflow: hidden;  /* 保留，範圍圈可能會被邊緣裁切，但不影響體驗 */
+  overflow: hidden;
 }
 
 #game-board::before {
@@ -60,7 +60,7 @@ body {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  border: 64px solid rgba(0, 0, 0, 0.35);
+  border: 64px solid rgba(0, 0, 0, 0.35);   /* 外圈一格寬的暗色 */
   pointer-events: none;
   z-index: 1;
   box-sizing: border-box;
@@ -91,11 +91,10 @@ body {
   font-size: 36px;
   background: rgba(255,255,200,0.5);
   border-radius: 50%;
-  transition: transform 0.15s ease-out;  /* 攻擊動畫用 */
+  transition: transform 0.15s ease-out;
   z-index: 2;
 }
 
-/* 攻擊範圍指示器 */
 .range-indicator {
   position: absolute;
   left: 50%;

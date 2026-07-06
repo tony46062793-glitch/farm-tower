@@ -692,23 +692,42 @@ class Game {
     this.mice.splice(index, 1);
   }
 
-  ferretClearInnerHoles() {
+ferretClearInnerHoles(now) {
     const ferretDef = this.config.buildings.ferretDen;
     const range = ferretDef.ferretRange;
+    // 冷卻時間（秒）從 config 讀取，如果沒有就給一個超大值 (但我們用 attackSpeed 表示冷卻)
+    const cooldown = ferretDef.attackSpeed || 0.5; // 預設 0.5 秒
+
     for (let building of this.buildings) {
       if (building.type !== 'ferretDen') continue;
+
+      // 初始化 lastClearTime
+      if (building.lastClearTime === undefined) {
+        building.lastClearTime = 0;
+      }
+
+      // 檢查冷卻
+      if (now - building.lastClearTime < cooldown * 1000) continue;
+
+      let cleared = false;
       for (let i = this.mouseHoles.length - 1; i >= 0; i--) {
         const hole = this.mouseHoles[i];
         const dist = Math.abs(building.row - hole.row) + Math.abs(building.col - hole.col);
         if (dist <= range) {
           hole.hp = 0;
           this.removeInnerHole(hole);
-          this.showMessage('🦦 貂洞摧毀了一個老鼠洞！');
+          cleared = true;
+          break; // 每次冷卻只摧毀一個洞（若希望一次清多個，可以去掉 break）
         }
       }
-    }
-  }
 
+      if (cleared) {
+        building.lastClearTime = now;
+        this.showMessage('🦦 貂洞摧毀了一個老鼠洞！');
+      }
+    }
+  },
+  
   buildingAttack(now) {
     const globalAtk = this.getGlobalAttackBonus();
     const hasDog = this.buildings.some(b => b.type === 'dogHouse');

@@ -88,9 +88,9 @@ const CONFIG = {
       { row: 5, col: 5, resource: 'corn' }
     ],
     farmhouse: { row: 4, col: 4 },
-    outerHoleMax: 4,                 // 外圈洞上限
-    outerHoleSpawnInterval: 8,      // 每隔幾秒嘗試生成一個外圈洞
-    innerHoleSpawnInterval: 15,     // 內部洞生成檢查間隔
+    outerHoleMax: 4,
+    outerHoleSpawnInterval: 8,
+    innerHoleSpawnInterval: 15,
     innerHoleMax: 3,
     spawn: {
       normal: { speed: 1.0, hp: 20 },

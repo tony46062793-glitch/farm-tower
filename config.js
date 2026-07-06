@@ -1,5 +1,5 @@
 const CONFIG = {
-  grid: { rows: 9, cols: 9, cellSize: 64 },
+  grid: { rows: 9, cols: 9, cellSize: 48 },   // 格子縮小為 48px
   resources: {
     hay: { name: '牧草', emoji: '🌿' },
     corn: { name: '玉米', emoji: '🌽' },
@@ -15,7 +15,7 @@ const CONFIG = {
       cost: { hay: 20 },
       hp: 50,
       attack: 5,
-      range: 100,
+      range: 80,              // 範圍從 100 調整為 80（配合格子縮小）
       attackSpeed: 1.2,
       special: '若無犬窩，有10%機率誤傷兔/雞/貂',
       unlockRequirement: null

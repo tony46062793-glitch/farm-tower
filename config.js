@@ -15,7 +15,7 @@ const CONFIG = {
       cost: { hay: 20 },
       hp: 50,
       attack: 5,
-      range: 300,            // 範圍提升至 300
+      range: 200,            // 範圍提升至 300
       attackSpeed: 1.2,
       special: '若無犬窩，有10%機率誤傷兔/雞/貂',
       unlockRequirement: null
@@ -52,7 +52,7 @@ const CONFIG = {
       hp: 60,
       attack: 7,             // 新增攻擊力
       attackSpeed: 1,        // 每秒 1 次
-      range: 200,
+      range: 150,
       effect: 'globalAttack+1',   // 全體攻擊 +1
       unlockRequirement: 'chickenCoop'
     },

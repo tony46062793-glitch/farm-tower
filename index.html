@@ -45,19 +45,34 @@ body {
   background: #fffde7;
   border: 1px solid #a5d6a7;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  flex-direction: row;        /* 水平排列 */
+  align-items: center;        /* 垂直置中 */
+  justify-content: center;    /* 水平置中 */
+  gap: 4px;                   /* 圖與數字間距 */
   font-weight: bold;
   color: #3e2723;
   margin: 0;
-  padding: 2px;
+  padding: 2px 4px;
   font-size: 13px;
 }
-.resource-card span.emoji { font-size: 20px; }
-.resource-card .value { font-size: 14px; }
-.resource-card small { font-size: 10px; color: #795548; }
 
+.resource-card .emoji { font-size: 20px; line-height: 1; }
+.resource-card .value { font-size: 16px; line-height: 1; }
+.resource-card small {
+  font-size: 9px;
+  color: #795548;
+  display: block;
+  position: absolute;
+  bottom: 1px;
+  right: 3px;
+}
+
+/* 讓資源卡有相對定位，以便 small 定位 */
+.resource-card {
+  position: relative;
+}
+
+/* 固定在特定行 */
 .resource-card:nth-child(1) { grid-row: 2; }
 .resource-card:nth-child(2) { grid-row: 3; }
 .resource-card:nth-child(3) { grid-row: 4; }
@@ -121,10 +136,8 @@ body {
   background: rgba(255,255,200,0.5);
   border-radius: 50%;
   transition: transform 0.15s ease-out;
-  /* 確保內部元素絕對置中 */
   line-height: 1;
 }
-/* 農舍特殊樣式：讓圖示和血條垂直置中 */
 .farmhouse {
   background: rgba(255, 215, 0, 0.3);
   border-radius: 8px;
@@ -333,6 +346,7 @@ button.selected {
   </div>
 </div>
 
+<!-- 商店、結果彈窗保持不變 -->
 <div id="shop-modal" class="modal hidden">
   <div class="modal-content">
     <h2>🛒 升級商店</h2>

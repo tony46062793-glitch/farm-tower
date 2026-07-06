@@ -23,8 +23,7 @@ class Game {
 
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
 
-    // 方便使用的格子尺寸
-    this.cellSize = this.config.grid.cellSize;   // 動態取得
+    this.cellSize = this.config.grid.cellSize;
 
     this.loadPlayerData();
     this.initUI();
@@ -88,21 +87,7 @@ class Game {
     this.updateShopItems();
   }
 
-  createBuildButtons() {
-    this.buildButtonsEl.innerHTML = '';
-    for (let key in this.config.buildings) {
-      const b = this.config.buildings[key];
-      const btn = document.createElement('button');
-      btn.textContent = `${b.emoji} ${b.name}`;
-      btn.dataset.buildingId = b.id;
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectBuilding(b.id);
-      });
-      this.buildButtonsEl.appendChild(btn);
-    }
-  }
-
+  // ── 建築按鈕（含詳細提示） ──
   createBuildButtons() {
     this.buildButtonsEl.innerHTML = '';
     for (let key in this.config.buildings) {
@@ -111,7 +96,7 @@ class Game {
       btn.textContent = `${b.emoji} ${b.name}`;
       btn.dataset.buildingId = b.id;
 
-      // 組裝提示文字（一行一項資訊）
+      // 組裝提示文字
       let tip = `${b.name}`;
       if (b.attack > 0) {
         tip += `\n攻擊力：${b.attack}`;
@@ -120,13 +105,11 @@ class Game {
       if (b.range) {
         tip += `\n攻擊範圍：${b.range} px`;
       }
-      // 顯示消耗資源
       let costStr = [];
       for (let res in b.cost) {
         costStr.push(`${this.config.resources[res].emoji} ${b.cost[res]}`);
       }
       tip += `\n消耗：${costStr.join('，')}`;
-      // 特殊效果或說明
       if (b.special) {
         tip += `\n特殊：${b.special}`;
       }
@@ -142,13 +125,27 @@ class Game {
         tip += `\n前置建築：${reqBuilding ? reqBuilding.name : b.unlockRequirement}`;
       }
 
-      btn.title = tip;  // 將所有資訊設為原生 tooltip
+      btn.title = tip;
 
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.selectBuilding(b.id);
       });
       this.buildButtonsEl.appendChild(btn);
+    }
+  }
+
+  // ── 資源購買按鈕 ──
+  createResourceButtons() {
+    this.resourceButtonsEl.innerHTML = '';
+    const order = ['hay', 'corn', 'meatEgg', 'meat'];
+    for (let key of order) {
+      const shop = this.config.resourceShop[key];
+      const info = this.config.resources[key];
+      const btn = document.createElement('button');
+      btn.textContent = `${info.emoji}+${shop.amount} (${shop.cost}💰)`;
+      btn.addEventListener('click', () => this.buyResource(key));
+      this.resourceButtonsEl.appendChild(btn);
     }
   }
 

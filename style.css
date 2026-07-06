@@ -19,7 +19,7 @@ body {
   border: 4px solid #8b5a2b;
   border-radius: 16px;
   padding: 16px;
-  width: 580px;               /* 稍微放寬以容納 8x8 */
+  width: 580px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
@@ -35,15 +35,18 @@ body {
 
 #game-board {
   position: relative;
-  width: 512px;               /* 8 * 64 */
-  height: 512px;              /* 8 * 64 */
+  width: 512px;
+  height: 512px;
   margin: 0 auto;
   background: #c8e6c9;
   border: 2px solid #6d4c41;
   border-radius: 8px;
   overflow: hidden;
+  /* 用內陰影取代暗色覆蓋層，保證完美對齊 */
+  box-shadow: inset 0 0 0 64px rgba(0, 0, 0, 0.35);
 }
 
+/* 格線 */
 #game-board::before {
   content: "";
   position: absolute;
@@ -56,14 +59,9 @@ body {
   z-index: 0;
 }
 
+/* 移除舊的外層覆蓋元素，不再需要 .outer-overlay */
 .outer-overlay {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  border: 64px solid rgba(0, 0, 0, 0.35);   /* 外圈一格寬的暗色 */
-  pointer-events: none;
-  z-index: 1;
-  box-sizing: border-box;
+  display: none;
 }
 
 .cell, .building, .mouse, .mouse-hole {

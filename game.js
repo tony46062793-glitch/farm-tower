@@ -14,6 +14,9 @@ class Game {
 
     this.elapsedTime = 0;
     this.killCount = 0;
+    // 種植計數
+    this.farmingCounts = { hay: 0, corn: 0 };
+
     this.timerInterval = null;
     this.outerHoleSpawnInterval = null;
     this.innerHoleSpawnInterval = null;
@@ -36,11 +39,16 @@ class Game {
         const data = JSON.parse(saved);
         this.playerData.gold = data.gold || 0;
         this.playerData.purchasedUpgrades = data.purchasedUpgrades || [];
+        this.farmingCounts = data.farmingCounts || { hay: 0, corn: 0 };
       } catch (e) {}
     }
   }
   savePlayerData() {
-    localStorage.setItem('farmTowerSave', JSON.stringify(this.playerData));
+    localStorage.setItem('farmTowerSave', JSON.stringify({
+      gold: this.playerData.gold,
+      purchasedUpgrades: this.playerData.purchasedUpgrades,
+      farmingCounts: this.farmingCounts
+    }));
     this.updateResourceDisplay();
   }
   getGlobalAttackBonus() {
@@ -81,11 +89,12 @@ class Game {
     this.boardEl.addEventListener('click', (e) => this.onBoardClick(e));
 
     this.createBuildButtons();
-    this.createResourceButtons();
+    this.createFarmingButtons();   // 取代原本的 createResourceButtons
     this.updateResourceDisplay();
     this.updateShopItems();
   }
 
+  // ── 建築按鈕（含提示） ──
   createBuildButtons() {
     this.buildButtonsEl.innerHTML = '';
     for (let key in this.config.buildings) {
@@ -125,16 +134,49 @@ class Game {
     }
   }
 
-  createResourceButtons() {
+  // ── 種植按鈕（取代資源購買按鈕） ──
+  createFarmingButtons() {
     this.resourceButtonsEl.innerHTML = '';
-    const order = ['hay', 'corn', 'meatEgg', 'meat'];
-    for (let key of order) {
-      const shop = this.config.resourceShop[key];
-      const info = this.config.resources[key];
+    const farming = this.config.farming;
+    for (let key in farming) {
+      const farm = farming[key];
       const btn = document.createElement('button');
-      btn.textContent = `${info.emoji}+${shop.amount} (${shop.cost}💰)`;
-      btn.addEventListener('click', () => this.buyResource(key));
+      const level = this.farmingCounts[key] || 0;
+      btn.textContent = `${farm.emoji} ${farm.name} (Lv.${level})`;
+      btn.title = `花費 ${farm.cost} 金幣\n效果：每秒 +${farm.perSecond} ${this.config.resources[farm.resource].name}${farm.extraGold ? `，+${farm.extraGold} 金幣` : ''}`;
+      btn.addEventListener('click', () => this.buyFarming(key));
       this.resourceButtonsEl.appendChild(btn);
+    }
+  }
+
+  buyFarming(type) {
+    if (this.state !== 'playing') return;
+    const farm = this.config.farming[type];
+    if (this.playerData.gold < farm.cost) {
+      this.showMessage('金幣不足');
+      return;
+    }
+    this.playerData.gold -= farm.cost;
+    this.farmingCounts[type] = (this.farmingCounts[type] || 0) + 1;
+    this.savePlayerData();
+    this.createFarmingButtons(); // 更新按鈕顯示
+    this.showMessage(`購買了 ${farm.name}！現在每秒 +${farm.perSecond * this.farmingCounts[type]} ${this.config.resources[farm.resource].name}`);
+  }
+
+  // 每秒生產資源（在計時器中呼叫）
+  produceFarming() {
+    let produced = false;
+    if (this.farmingCounts.hay > 0) {
+      this.resources.hay += this.farmingCounts.hay * this.config.farming.hay.perSecond;
+      produced = true;
+    }
+    if (this.farmingCounts.corn > 0) {
+      this.resources.corn += this.farmingCounts.corn * this.config.farming.corn.perSecond;
+      this.playerData.gold += this.farmingCounts.corn * (this.config.farming.corn.extraGold || 1);
+      produced = true;
+    }
+    if (produced) {
+      this.updateResourceDisplay();
     }
   }
 
@@ -296,8 +338,9 @@ class Game {
     building.element = el;
   }
 
-  buyResource(key) {
-    if (this.state !== 'playing') return;
+  // ── 商店中的資源購買（移到彈窗內） ──
+  buyResourceFromShop(key) {
+    if (this.state !== 'playing' && this.state !== 'waiting') return;
     const shop = this.config.resourceShop[key];
     if (!shop || this.playerData.gold < shop.cost) {
       this.showMessage('金幣不足');
@@ -307,12 +350,14 @@ class Game {
     this.resources[key] = (this.resources[key] || 0) + shop.amount;
     this.updateResourceDisplay();
     this.savePlayerData();
+    this.showMessage(`購買了 ${this.config.resources[key].name} +${shop.amount}`);
   }
 
   startTimers() {
     this.timerInterval = setInterval(() => {
       this.elapsedTime++;
       this.updateTimerDisplay();
+      this.produceFarming();   // 每秒生產
     }, 1000);
 
     this.startOuterHoleSpawn();
@@ -514,7 +559,7 @@ class Game {
 
     this.updateMice(delta);
     this.buildingAttack(now);
-    this.ferretClearInnerHoles(now);   // 傳入 now
+    this.ferretClearInnerHoles(now);
 
     this.gameLoopId = requestAnimationFrame((t) => this.gameLoop(t));
   }
@@ -681,19 +726,15 @@ class Game {
     this.mice.splice(index, 1);
   }
 
-  // ── 貂洞摧毀內部洞（含冷卻） ──
   ferretClearInnerHoles(now) {
     const ferretDef = this.config.buildings.ferretDen;
-    const range = ferretDef.ferretRange;       // 4 格
-    const cooldown = (ferretDef.attackSpeed || 0.5) * 1000; // 轉為毫秒
+    const range = ferretDef.ferretRange;
+    const cooldown = (ferretDef.attackSpeed || 0.5) * 1000;
 
     for (let building of this.buildings) {
       if (building.type !== 'ferretDen') continue;
-
-      if (building.lastClearTime === undefined) {
-        building.lastClearTime = 0;
-      }
-      if (now - building.lastClearTime < cooldown) continue; // 冷卻中
+      if (building.lastClearTime === undefined) building.lastClearTime = 0;
+      if (now - building.lastClearTime < cooldown) continue;
 
       let cleared = false;
       for (let i = this.mouseHoles.length - 1; i >= 0; i--) {
@@ -703,7 +744,7 @@ class Game {
           hole.hp = 0;
           this.removeInnerHole(hole);
           cleared = true;
-          break; // 每次冷卻只摧毀一個洞
+          break;
         }
       }
       if (cleared) {
@@ -718,8 +759,8 @@ class Game {
     const hasDog = this.buildings.some(b => b.type === 'dogHouse');
     const hasFerret = this.buildings.some(b => b.type === 'ferretDen');
     let extraAtk = 0;
-    if (hasDog) extraAtk += 1;   // 犬窩 +1
-    if (hasFerret) extraAtk += 2; // 貂洞 +2
+    if (hasDog) extraAtk += 1;
+    if (hasFerret) extraAtk += 2;
     const totalBonus = globalAtk + extraAtk;
 
     for (let building of this.buildings) {
@@ -814,6 +855,7 @@ class Game {
     this.btnStart.addEventListener('click', () => this.startGame());
   }
 
+  // ── 商店（包含資源購買 + 升級卡片） ──
   openShop() {
     this.updateShopItems();
     this.shopModal.classList.remove('hidden');
@@ -823,6 +865,37 @@ class Game {
   updateShopItems() {
     const container = document.getElementById('shop-items');
     container.innerHTML = '';
+
+    // 1. 資源購買區塊
+    const resTitle = document.createElement('h3');
+    resTitle.textContent = '🛍️ 購買資源';
+    resTitle.style.marginBottom = '8px';
+    container.appendChild(resTitle);
+    const order = ['hay', 'corn', 'meatEgg', 'meat'];
+    for (let key of order) {
+      const shop = this.config.resourceShop[key];
+      const info = this.config.resources[key];
+      const div = document.createElement('div');
+      div.className = 'shop-item';
+      div.innerHTML = `
+        <div class="shop-item-info">
+          <strong>${info.emoji} ${info.name}</strong>
+          <span>獲得 ${shop.amount}，花費 ${shop.cost}💰</span>
+        </div>
+        <button ${this.playerData.gold < shop.cost ? 'disabled' : ''}>
+          購買 (${shop.cost}💰)
+        </button>
+      `;
+      div.querySelector('button').addEventListener('click', () => this.buyResourceFromShop(key));
+      container.appendChild(div);
+    }
+
+    // 2. 升級卡片區塊
+    const cardTitle = document.createElement('h3');
+    cardTitle.textContent = '⬆️ 永久升級';
+    cardTitle.style.marginTop = '16px';
+    cardTitle.style.marginBottom = '8px';
+    container.appendChild(cardTitle);
     for (let card of this.config.shopCards) {
       const bought = this.playerData.purchasedUpgrades.includes(card.id);
       const div = document.createElement('div');

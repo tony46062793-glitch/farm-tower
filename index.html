@@ -3,36 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>農夫守塔 - 初春試煉</title>
+  <title>農夫守塔 - 無限挑戰 8x8</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="game-container">
-    <!-- 頂部狀態列 -->
     <div id="status-bar">
       <div class="status-item">🌿 <span id="res-hay">100</span></div>
       <div class="status-item">🌽 <span id="res-corn">80</span></div>
       <div class="status-item">🥚 <span id="res-meatEgg">0</span></div>
       <div class="status-item">🍖 <span id="res-meat">0</span></div>
       <div class="status-item">💰 <span id="res-gold">0</span></div>
-      <div class="status-item">⏱️ <span id="timer">05:00</span></div>
+      <div class="status-item">⏱️ <span id="timer">00:00</span></div>
     </div>
 
-    <!-- 遊戲棋盤 -->
-    <div id="game-board"></div>
+    <div id="game-board">
+      <div class="outer-overlay"></div>
+    </div>
 
-    <!-- 操作按鈕區 -->
     <div id="controls">
       <div id="build-buttons"></div>
-      <button id="btn-start">開始防守</button>
+      <div id="resource-buttons"></div>
       <button id="btn-shop">商店</button>
+      <button id="btn-restart">重新開始</button>
     </div>
 
-    <!-- 簡易訊息提示 -->
     <div id="message"></div>
   </div>
 
-  <!-- 商店模態對話框 -->
   <div id="shop-modal" class="modal hidden">
     <div class="modal-content">
       <h2>🛒 商店</h2>
@@ -41,12 +39,11 @@
     </div>
   </div>
 
-  <!-- 結算面板 -->
   <div id="result-modal" class="modal hidden">
     <div class="modal-content">
       <h2 id="result-title"></h2>
       <p id="result-detail"></p>
-      <button id="btn-restart">再來一局</button>
+      <button id="btn-play-again">再來一局</button>
     </div>
   </div>
 

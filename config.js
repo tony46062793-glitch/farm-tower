@@ -1,5 +1,5 @@
 const CONFIG = {
-  grid: { rows: 9, cols: 9, cellSize: 48 },   // 格子縮小為 48px
+  grid: { rows: 9, cols: 9, cellSize: 48 },
   resources: {
     hay: { name: '牧草', emoji: '🌿' },
     corn: { name: '玉米', emoji: '🌽' },
@@ -15,7 +15,7 @@ const CONFIG = {
       cost: { hay: 20 },
       hp: 50,
       attack: 5,
-      range: 80,              // 範圍從 100 調整為 80（配合格子縮小）
+      range: 300,            // 範圍提升至 300
       attackSpeed: 1.2,
       special: '若無犬窩，有10%機率誤傷兔/雞/貂',
       unlockRequirement: null
@@ -26,7 +26,9 @@ const CONFIG = {
       emoji: '🐇',
       cost: { hay: 30 },
       hp: 30,
-      attack: 0,
+      attack: 1,             // 新增攻擊力
+      attackSpeed: 2.5,      // 每秒攻擊次數
+      range: 90,             // 攻擊範圍
       unlockRequirement: null,
       unlocks: 'ferretDen'
     },
@@ -36,7 +38,9 @@ const CONFIG = {
       emoji: '🐔',
       cost: { corn: 30 },
       hp: 30,
-      attack: 0,
+      attack: 3,             // 新增攻擊力
+      attackSpeed: 1.8,
+      range: 120,
       unlockRequirement: null,
       unlocks: 'dogHouse'
     },
@@ -46,8 +50,10 @@ const CONFIG = {
       emoji: '🐕',
       cost: { meatEgg: 25 },
       hp: 60,
-      attack: 0,
-      effect: 'globalAttack+2',
+      attack: 7,             // 新增攻擊力
+      attackSpeed: 1,        // 每秒 1 次
+      range: 200,
+      effect: 'globalAttack+1',   // 全體攻擊 +1
       unlockRequirement: 'chickenCoop'
     },
     ferretDen: {
@@ -56,10 +62,10 @@ const CONFIG = {
       emoji: '🦦',
       cost: { meat: 25 },
       hp: 60,
-      attack: 0,
+      attackSpeed: 0.5, 
       effect: 'globalAttack+2',
-      special: '摧毀範圍內的老鼠洞',
-      ferretRange: 2,
+      special: '摧毀範圍內的老鼠洞',   // 主要功能
+      ferretRange: 4,        // 摧毀洞的範圍（格子數）
       unlockRequirement: 'rabbitHole'
     }
   },

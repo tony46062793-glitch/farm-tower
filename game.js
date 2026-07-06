@@ -7,14 +7,15 @@ class Game {
     this.mice = [];
     this.farmPlots = [];
     this.farmhouse = null;
-    this.mouseHoles = [];
+    this.mouseHoles = [];        // 內部洞（可被破壞）
+    this.outerHoles = [];        // 外圈洞（不可破壞）
     this.selectedBuildingType = null;
     this.playerData = { gold: 0, purchasedUpgrades: [] };
 
     this.elapsedTime = 0;
     this.killCount = 0;
     this.timerInterval = null;
-    this.outerSpawnInterval = null;
+    this.outerHoleSpawnInterval = null;   // 外圈洞生成定時器
     this.innerHoleSpawnInterval = null;
     this.accidentInterval = null;
     this.gameLoopId = null;
@@ -27,7 +28,6 @@ class Game {
     this.renderInitialBoard();
   }
 
-  // ========== 存檔 ==========
   loadPlayerData() {
     const saved = localStorage.getItem('farmTowerSave');
     if (saved) {
@@ -62,7 +62,6 @@ class Game {
     return bonus;
   }
 
-  // ========== UI 初始化 ==========
   initUI() {
     this.boardEl = document.getElementById('game-board');
     this.timerEl = document.getElementById('timer');
@@ -120,7 +119,6 @@ class Game {
     this.showMessage(`已選擇 ${this.config.buildings[id].name}，點擊空地建造`);
   }
 
-  // ========== 初始畫面 ==========
   renderInitialBoard() {
     const level = this.config.infiniteLevel;
     this.resources = { ...level.initialResources };
@@ -132,6 +130,7 @@ class Game {
     this.buildings = [];
     this.mice = [];
     this.mouseHoles = [];
+    this.outerHoles = [];
     this.farmhouse = null;
     this.selectedBuildingType = null;
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
@@ -282,14 +281,14 @@ class Game {
     this.savePlayerData();
   }
 
-  // ========== 計時與生成 ==========
+  // ========== 計時器與生成 ==========
   startTimers() {
     this.timerInterval = setInterval(() => {
       this.elapsedTime++;
       this.updateTimerDisplay();
     }, 1000);
 
-    this.startOuterSpawn();
+    this.startOuterHoleSpawn();
     this.startInnerHoleSpawning();
     this.accidentInterval = setInterval(() => this.checkAccidentalDamage(), 10000);
     this.lastTimestamp = performance.now();
@@ -298,39 +297,82 @@ class Game {
 
   stopAllTimers() {
     if (this.timerInterval) clearInterval(this.timerInterval);
-    if (this.outerSpawnInterval) clearInterval(this.outerSpawnInterval);
+    if (this.outerHoleSpawnInterval) clearInterval(this.outerHoleSpawnInterval);
     if (this.innerHoleSpawnInterval) clearInterval(this.innerHoleSpawnInterval);
     if (this.accidentInterval) clearInterval(this.accidentInterval);
     if (this.gameLoopId) cancelAnimationFrame(this.gameLoopId);
+    // 清除外圈洞的生成定時器
+    for (let hole of this.outerHoles) {
+      if (hole.intervalId) clearInterval(hole.intervalId);
+    }
+    // 清除內部洞的生成定時器
+    for (let hole of this.mouseHoles) {
+      if (hole.intervalId) clearInterval(hole.intervalId);
+    }
     this.timerInterval = null;
-    this.outerSpawnInterval = null;
+    this.outerHoleSpawnInterval = null;
     this.innerHoleSpawnInterval = null;
     this.accidentInterval = null;
     this.gameLoopId = null;
   }
 
-  startOuterSpawn() {
-    if (this.outerSpawnInterval) clearInterval(this.outerSpawnInterval);
-    const interval = this.config.infiniteLevel.outerSpawnInterval * 1000;
-    this.outerSpawnInterval = setInterval(() => {
+  // ---- 外圈洞生成 ----
+  startOuterHoleSpawn() {
+    if (this.outerHoleSpawnInterval) clearInterval(this.outerHoleSpawnInterval);
+    const interval = this.config.infiniteLevel.outerHoleSpawnInterval * 1000;
+    this.outerHoleSpawnInterval = setInterval(() => {
       if (this.state !== 'playing') return;
-      this.spawnFromOuterHole();
+      this.trySpawnOuterHole();
     }, interval);
   }
 
-  spawnFromOuterHole() {
+  trySpawnOuterHole() {
+    const max = this.config.infiniteLevel.outerHoleMax;
+    if (this.outerHoles.length >= max) return;
+
+    // 收集所有外圈格子，且未被其他外圈洞佔用
     const candidates = [];
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         if (r === 0 || r === 8 || c === 0 || c === 8) {
-          candidates.push({ row: r, col: c });
+          if (!this.outerHoles.some(h => h.row === r && h.col === c)) {
+            candidates.push({ row: r, col: c });
+          }
         }
       }
     }
+    if (candidates.length === 0) return;
+
     const pos = candidates[Math.floor(Math.random() * candidates.length)];
-    this.spawnMouseAt(pos.row, pos.col, 'normal');
+    this.createOuterHole(pos.row, pos.col);
   }
 
+  createOuterHole(row, col) {
+    const holeCfg = this.config.mouseHole;
+    const hole = {
+      row, col,
+      intervalId: null,
+      element: null
+    };
+    this.outerHoles.push(hole);
+
+    // 放置外圈洞圖示
+    const el = document.createElement('div');
+    el.className = 'mouse-hole outer-hole';
+    el.style.left = col * 64 + 'px';
+    el.style.top = row * 64 + 'px';
+    el.textContent = holeCfg.emoji;
+    this.boardEl.appendChild(el);
+    hole.element = el;
+
+    // 開始定時生成老鼠
+    hole.intervalId = setInterval(() => {
+      if (this.state !== 'playing') return;
+      this.spawnMouseAt(row, col, 'normal');
+    }, holeCfg.spawnInterval * 1000);
+  }
+
+  // ---- 內部洞生成（僅當外圈洞滿） ----
   startInnerHoleSpawning() {
     if (this.innerHoleSpawnInterval) clearInterval(this.innerHoleSpawnInterval);
     const interval = this.config.infiniteLevel.innerHoleSpawnInterval * 1000;
@@ -341,8 +383,11 @@ class Game {
   }
 
   trySpawnInnerHole() {
+    // 只有外圈洞數量達到上限，才允許內部洞生成
+    if (this.outerHoles.length < this.config.infiniteLevel.outerHoleMax) return;
     const max = this.config.infiniteLevel.innerHoleMax;
     if (this.mouseHoles.length >= max) return;
+
     const empty = [];
     for (let r = 1; r <= 7; r++) {
       for (let c = 1; c <= 7; c++) {
@@ -353,16 +398,15 @@ class Game {
     }
     if (empty.length === 0) return;
     const pos = empty[Math.floor(Math.random() * empty.length)];
-    this.createMouseHole(pos.row, pos.col);
+    this.createInnerHole(pos.row, pos.col);
   }
 
-  createMouseHole(row, col) {
+  createInnerHole(row, col) {
     const holeCfg = this.config.mouseHole;
     const hole = {
       row, col,
       hp: holeCfg.hp,
       maxHp: holeCfg.hp,
-      spawnTimer: holeCfg.initialSpawnDelay,
       element: null
     };
     this.mouseHoles.push(hole);
@@ -385,7 +429,7 @@ class Game {
     }, holeCfg.spawnInterval * 1000);
   }
 
-  removeMouseHole(hole) {
+  removeInnerHole(hole) {
     const idx = this.mouseHoles.indexOf(hole);
     if (idx > -1) {
       clearInterval(hole.intervalId);
@@ -397,7 +441,7 @@ class Game {
     }
   }
 
-  // ========== 老鼠生成與路徑 ==========
+  // 老鼠生成（通用）
   spawnMouseAt(row, col, type) {
     const baseDef = this.config.infiniteLevel.spawn[type];
     if (!baseDef) return;
@@ -418,10 +462,10 @@ class Game {
       hp: baseDef.hp + hpBonus,
       maxHp: baseDef.hp + hpBonus,
       speed: baseDef.speed + speedBonus,
-      path,                // 剩餘路徑（不含當前格）
+      path,
       pathIndex: 0,
-      state: 'moving',     // 'moving' | 'attacking'
-      attackTarget: null,  // 正在攻擊的物件（building 或 farmPlot）
+      state: 'moving',
+      attackTarget: null,
       attackTimer: 0,
       element: null
     };
@@ -471,25 +515,21 @@ class Game {
   // ========== 遊戲主循環 ==========
   gameLoop(now) {
     if (this.state !== 'playing') return;
-    const delta = Math.min((now - this.lastTimestamp) / 1000, 0.1); // 避免大幀跳
+    const delta = Math.min((now - this.lastTimestamp) / 1000, 0.1);
     this.lastTimestamp = now;
 
     this.updateMice(delta);
     this.buildingAttack(now);
-    this.ferretClearHoles();
+    this.ferretClearInnerHoles();
 
     this.gameLoopId = requestAnimationFrame((t) => this.gameLoop(t));
   }
 
-  // 更新所有老鼠（移動 + 攻擊）
   updateMice(delta) {
     for (let i = this.mice.length - 1; i >= 0; i--) {
       const m = this.mice[i];
-
       if (m.state === 'moving') {
-        // 移動狀態
         if (m.pathIndex >= m.path.length) {
-          // 到達終點（農舍）
           this.hitFarmhouse(m);
           this.removeMouse(i);
           continue;
@@ -502,7 +542,6 @@ class Game {
         const dist = Math.sqrt(dx * dx + dy * dy);
         const moveSpeed = m.speed * 64 * delta;
         if (dist <= moveSpeed + 2) {
-          // 到達目標格子中心
           m.x = targetX;
           m.y = targetY;
           m.row = targetNode.row;
@@ -516,14 +555,12 @@ class Game {
           m.element.style.top = m.y + 'px';
         }
       } else if (m.state === 'attacking') {
-        // 攻擊狀態
         m.attackTimer += delta;
         const interval = this.config.infiniteLevel.mouseAttack.attackInterval;
         if (m.attackTimer >= interval) {
           m.attackTimer -= interval;
           this.mouseDoAttack(m);
         }
-        // 攻擊時輕微抖動
         if (m.element) {
           const shake = Math.sin(performance.now() / 50) * 3;
           m.element.style.transform = `translate(-50%, -50%) translateX(${shake}px)`;
@@ -532,13 +569,11 @@ class Game {
     }
   }
 
-  // 老鼠到達一個新格子時觸發
   onMouseReachCell(mouse, row, col) {
     const cellType = this.gridMap[row][col];
     if (cellType === 'building') {
       const building = this.buildings.find(b => b.row === row && b.col === col);
       if (building) {
-        // 開始攻擊建築
         mouse.state = 'attacking';
         mouse.attackTarget = building;
         mouse.attackTimer = 0;
@@ -547,96 +582,73 @@ class Game {
     } else if (cellType === 'farmplot') {
       const plot = this.farmPlots.find(p => p.row === row && p.col === col);
       if (plot && this.resources[plot.resource] > 0) {
-        // 開始偷取農田
         mouse.state = 'attacking';
         mouse.attackTarget = plot;
         mouse.attackTimer = 0;
-        // 記錄停留開始時間（用於限制最大停留）
         mouse.farmStayTimer = 0;
       }
     } else if (cellType === 'farmhouse') {
       this.hitFarmhouse(mouse);
-      // 老鼠在攻擊農舍後消失，不用更改狀態
     }
-    // 若是空地或老鼠洞，保持 moving 繼續前進
   }
 
-  // 老鼠執行一次攻擊（對建築或農田）
   mouseDoAttack(mouse) {
     if (!mouse.attackTarget) {
-      // 目標已消失，恢復移動
       mouse.state = 'moving';
-      mouse.element.style.transform = ''; // 清除抖動
+      mouse.element.style.transform = '';
       return;
     }
-
     const atkCfg = this.config.infiniteLevel.mouseAttack;
 
     if (mouse.attackTarget.type) {
-      // 攻擊目標是建築
       const building = mouse.attackTarget;
-      // 確認建築還存在
       if (!this.buildings.includes(building) || building.hp <= 0) {
-        // 建築已摧毀，清除目標，重新計算路徑
         mouse.state = 'moving';
         mouse.attackTarget = null;
         mouse.element.style.transform = '';
-        // 重新尋找從當前格到農舍的路徑
-        const start = { row: mouse.row, col: mouse.col };
-        const end = { row: this.farmhouse.row, col: this.farmhouse.col };
-        mouse.path = this.findPath(start, end);
-        mouse.pathIndex = 0;
+        this.repathMouse(mouse);
         return;
       }
       building.hp -= atkCfg.buildingDamage;
       this.showMessage(`🐭 攻擊建築！-${atkCfg.buildingDamage} HP`);
       if (building.hp <= 0) {
         this.destroyBuilding(building);
-        // 建築摧毀後，恢復移動並重算路徑
         mouse.state = 'moving';
         mouse.attackTarget = null;
         mouse.element.style.transform = '';
-        const start = { row: mouse.row, col: mouse.col };
-        const end = { row: this.farmhouse.row, col: this.farmhouse.col };
-        mouse.path = this.findPath(start, end);
-        mouse.pathIndex = 0;
+        this.repathMouse(mouse);
       }
     } else {
-      // 攻擊目標是農田
       const plot = mouse.attackTarget;
       const resType = plot.resource;
       if (this.resources[resType] <= 0 || !this.farmPlots.includes(plot)) {
-        // 農田已空，恢復移動
         mouse.state = 'moving';
         mouse.attackTarget = null;
         mouse.element.style.transform = '';
-        const start = { row: mouse.row, col: mouse.col };
-        const end = { row: this.farmhouse.row, col: this.farmhouse.col };
-        mouse.path = this.findPath(start, end);
-        mouse.pathIndex = 0;
+        this.repathMouse(mouse);
         return;
       }
       const stealAmount = Math.min(atkCfg.farmSteal, this.resources[resType]);
       this.resources[resType] -= stealAmount;
       this.updateResourceDisplay();
-      this.showMessage(`🐭 偷走了 ${stealAmount} ${this.config.resources[resType].name}！`);
-
-      // 累計停留時間，超過上限或資源歸零則離開
       mouse.farmStayTimer = (mouse.farmStayTimer || 0) + atkCfg.attackInterval;
       if (this.resources[resType] <= 0 || mouse.farmStayTimer >= atkCfg.maxFarmStay) {
-        // 資源歸零 → 移除農田
         if (this.resources[resType] <= 0) {
           this.removeFarmPlot(plot);
         }
         mouse.state = 'moving';
         mouse.attackTarget = null;
         mouse.element.style.transform = '';
-        const start = { row: mouse.row, col: mouse.col };
-        const end = { row: this.farmhouse.row, col: this.farmhouse.col };
-        mouse.path = this.findPath(start, end);
-        mouse.pathIndex = 0;
+        this.repathMouse(mouse);
       }
     }
+  }
+
+  repathMouse(mouse) {
+    const start = { row: mouse.row, col: mouse.col };
+    const end = { row: this.farmhouse.row, col: this.farmhouse.col };
+    mouse.path = this.findPath(start, end);
+    mouse.pathIndex = 0;
   }
 
   removeFarmPlot(plot) {
@@ -644,7 +656,6 @@ class Game {
     if (idx > -1) {
       this.farmPlots.splice(idx, 1);
       this.gridMap[plot.row][plot.col] = null;
-      // 移除對應的 cell 元素
       const cells = this.boardEl.querySelectorAll('.cell');
       for (let cell of cells) {
         const left = parseInt(cell.style.left);
@@ -654,7 +665,6 @@ class Game {
           break;
         }
       }
-      // 如果所有農田都沒了，遊戲失敗
       if (this.farmPlots.length === 0) {
         this.gameOver();
       }
@@ -666,7 +676,6 @@ class Game {
     const dmg = this.config.farmhouse.damagePerMouse;
     this.farmhouse.hp = Math.max(0, this.farmhouse.hp - dmg);
     this.updateFarmhouseHP();
-    this.showMessage(`🐭 撞擊農舍！-${dmg} HP`);
     if (this.farmhouse.hp <= 0) {
       this.gameOver();
     }
@@ -678,7 +687,6 @@ class Game {
       this.buildings.splice(idx, 1);
       this.gridMap[building.row][building.col] = null;
       if (building.element) building.element.remove();
-      this.showMessage(`${this.config.buildings[building.type].name} 被摧毀！`);
     }
   }
 
@@ -688,8 +696,8 @@ class Game {
     this.mice.splice(index, 1);
   }
 
-  // ========== 貂洞清除內部老鼠洞 ==========
-  ferretClearHoles() {
+  // 貂洞只破壞內部洞
+  ferretClearInnerHoles() {
     const ferretDef = this.config.buildings.ferretDen;
     const range = ferretDef.ferretRange;
     for (let building of this.buildings) {
@@ -699,14 +707,13 @@ class Game {
         const dist = Math.abs(building.row - hole.row) + Math.abs(building.col - hole.col);
         if (dist <= range) {
           hole.hp = 0;
-          this.removeMouseHole(hole);
+          this.removeInnerHole(hole);
           this.showMessage('🦦 貂洞摧毀了一個老鼠洞！');
         }
       }
     }
   }
 
-  // ========== 防禦建築攻擊 ==========
   buildingAttack(now) {
     const globalAtk = this.getGlobalAttackBonus();
     const hasDog = this.buildings.some(b => b.type === 'dogHouse');
@@ -742,7 +749,6 @@ class Game {
         closestMouse.element.style.filter = 'brightness(2)';
         setTimeout(() => { if (closestMouse.element) closestMouse.element.style.filter = ''; }, 100);
 
-        // 攻擊動畫
         const m = closestMouse;
         const offsetX = m.x - bx;
         const offsetY = m.y - by;
@@ -782,14 +788,12 @@ class Game {
     }
   }
 
-  // ========== 遊戲結束 ==========
   gameOver() {
     if (this.state !== 'playing') return;
     this.stopAllTimers();
     this.state = 'gameover';
     this.mice.forEach(m => m.element?.remove());
     this.mice = [];
-    this.mouseHoles.forEach(h => clearInterval(h.intervalId));
     const survivalGold = Math.floor(this.elapsedTime / 10);
     this.playerData.gold += survivalGold;
     this.savePlayerData();
@@ -813,7 +817,6 @@ class Game {
     this.btnStart.addEventListener('click', () => this.startGame());
   }
 
-  // ========== 商店 ==========
   openShop() {
     this.updateShopItems();
     this.shopModal.classList.remove('hidden');
@@ -846,7 +849,6 @@ class Game {
     this.updateShopItems();
   }
 
-  // ========== UI 工具 ==========
   updateResourceDisplay() {
     document.getElementById('res-hay').textContent = this.resources.hay;
     document.getElementById('res-corn').textContent = this.resources.corn;

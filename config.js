@@ -1,5 +1,5 @@
 const CONFIG = {
-  grid: { rows: 9, cols: 9, cellSize: 64 },   // 9×9
+  grid: { rows: 9, cols: 9, cellSize: 64 },
   resources: {
     hay: { name: '牧草', emoji: '🌿' },
     corn: { name: '玉米', emoji: '🌽' },
@@ -78,7 +78,6 @@ const CONFIG = {
   infiniteLevel: {
     initialResources: { hay: 100, corn: 80, meatEgg: 0, meat: 0 },
     initialGold: 0,
-    // 農田圍繞中央農舍 (4,4) 的八格
     farmPlots: [
       { row: 3, col: 3, resource: 'corn' },
       { row: 3, col: 4, resource: 'hay' },
@@ -94,8 +93,15 @@ const CONFIG = {
     innerHoleSpawnInterval: 15,
     innerHoleMax: 3,
     spawn: {
-      normal: { speed: 2.0, hp: 20 },
-      fast: { speed: 3.0, hp: 15 }
+      normal: { speed: 1.0, hp: 20 },   // 速度降低為 1.0 格/秒
+      fast: { speed: 1.5, hp: 15 }
+    },
+    // 老鼠攻擊參數
+    mouseAttack: {
+      buildingDamage: 10,         // 每次攻擊對建築的傷害
+      farmSteal: 5,               // 每次偷取資源量
+      attackInterval: 0.8,        // 攻擊間隔（秒）
+      maxFarmStay: 3              // 在農田最多停留秒數（避免資源被偷光）
     },
     difficultyScale: {
       hpIncreasePerMinute: 2,

@@ -62,6 +62,7 @@ const CONFIG = {
       emoji: '🦦',
       cost: { meat: 25 },
       hp: 60,
+      attack: 0,        // 加上這行
       attackSpeed: 0.5, 
       effect: 'globalAttack+2',
       special: '摧毀範圍內的老鼠洞',   // 主要功能

@@ -7,8 +7,8 @@ class Game {
     this.mice = [];
     this.farmPlots = [];
     this.farmhouse = null;
-    this.mouseHoles = [];        // 內部洞（可被破壞）
-    this.outerHoles = [];        // 外圈洞（不可破壞）
+    this.mouseHoles = [];
+    this.outerHoles = [];
     this.selectedBuildingType = null;
     this.playerData = { gold: 0, purchasedUpgrades: [] };
 
@@ -22,6 +22,9 @@ class Game {
     this.lastTimestamp = 0;
 
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
+
+    // 方便使用的格子尺寸
+    this.cellSize = this.config.grid.cellSize;   // 動態取得
 
     this.loadPlayerData();
     this.initUI();
@@ -116,7 +119,6 @@ class Game {
   selectBuilding(id) {
     if (this.state !== 'playing') return;
     this.selectedBuildingType = id;
-    // 移除其他按鈕的 selected 狀態
     this.buildButtonsEl.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
     const activeBtn = this.buildButtonsEl.querySelector(`[data-building-id="${id}"]`);
     if (activeBtn) activeBtn.classList.add('selected');
@@ -144,8 +146,8 @@ class Game {
       this.gridMap[plot.row][plot.col] = 'farmplot';
       const cell = document.createElement('div');
       cell.className = 'cell';
-      cell.style.left = plot.col * 64 + 'px';
-      cell.style.top = plot.row * 64 + 'px';
+      cell.style.left = plot.col * this.cellSize + 'px';
+      cell.style.top = plot.row * this.cellSize + 'px';
       cell.textContent = this.config.resources[plot.resource].emoji;
       this.boardEl.appendChild(cell);
     }
@@ -161,8 +163,8 @@ class Game {
     this.gridMap[fhCfg.row][fhCfg.col] = 'farmhouse';
     const el = document.createElement('div');
     el.className = 'building farmhouse';
-    el.style.left = fhCfg.col * 64 + 'px';
-    el.style.top = fhCfg.row * 64 + 'px';
+    el.style.left = fhCfg.col * this.cellSize + 'px';
+    el.style.top = fhCfg.row * this.cellSize + 'px';
     el.innerHTML = `<div class="farmhouse-emoji">${this.config.farmhouse.emoji}</div>
                     <div class="hp-bar-container"><div class="hp-bar-fill" style="width:100%"></div></div>`;
     this.boardEl.appendChild(el);
@@ -211,8 +213,8 @@ class Game {
     const rect = this.boardEl.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const col = Math.floor(x / 64);
-    const row = Math.floor(y / 64);
+    const col = Math.floor(x / this.cellSize);
+    const row = Math.floor(y / this.cellSize);
     if (!this.isCellBuildable(row, col)) {
       this.showMessage('此格無法建造');
       return;
@@ -256,8 +258,8 @@ class Game {
     const def = this.config.buildings[building.type];
     const el = document.createElement('div');
     el.className = 'building';
-    el.style.left = building.col * 64 + 'px';
-    el.style.top = building.row * 64 + 'px';
+    el.style.left = building.col * this.cellSize + 'px';
+    el.style.top = building.row * this.cellSize + 'px';
     el.textContent = def.emoji;
 
     if (def.attack > 0) {
@@ -304,12 +306,8 @@ class Game {
     if (this.innerHoleSpawnInterval) clearInterval(this.innerHoleSpawnInterval);
     if (this.accidentInterval) clearInterval(this.accidentInterval);
     if (this.gameLoopId) cancelAnimationFrame(this.gameLoopId);
-    for (let hole of this.outerHoles) {
-      if (hole.intervalId) clearInterval(hole.intervalId);
-    }
-    for (let hole of this.mouseHoles) {
-      if (hole.intervalId) clearInterval(hole.intervalId);
-    }
+    for (let hole of this.outerHoles) if (hole.intervalId) clearInterval(hole.intervalId);
+    for (let hole of this.mouseHoles) if (hole.intervalId) clearInterval(hole.intervalId);
     this.timerInterval = null;
     this.outerHoleSpawnInterval = null;
     this.innerHoleSpawnInterval = null;
@@ -329,7 +327,6 @@ class Game {
   trySpawnOuterHole() {
     const max = this.config.infiniteLevel.outerHoleMax;
     if (this.outerHoles.length >= max) return;
-
     const candidates = [];
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
@@ -352,8 +349,8 @@ class Game {
 
     const el = document.createElement('div');
     el.className = 'mouse-hole outer-hole';
-    el.style.left = col * 64 + 'px';
-    el.style.top = row * 64 + 'px';
+    el.style.left = col * this.cellSize + 'px';
+    el.style.top = row * this.cellSize + 'px';
     el.textContent = holeCfg.emoji;
     this.boardEl.appendChild(el);
     hole.element = el;
@@ -377,7 +374,6 @@ class Game {
     if (this.outerHoles.length < this.config.infiniteLevel.outerHoleMax) return;
     const max = this.config.infiniteLevel.innerHoleMax;
     if (this.mouseHoles.length >= max) return;
-
     const empty = [];
     for (let r = 1; r <= 7; r++) {
       for (let c = 1; c <= 7; c++) {
@@ -398,18 +394,15 @@ class Game {
     this.gridMap[row][col] = 'mousehole';
     const el = document.createElement('div');
     el.className = 'mouse-hole';
-    el.style.left = col * 64 + 'px';
-    el.style.top = row * 64 + 'px';
+    el.style.left = col * this.cellSize + 'px';
+    el.style.top = row * this.cellSize + 'px';
     el.textContent = holeCfg.emoji;
     this.boardEl.appendChild(el);
     hole.element = el;
 
     hole.intervalId = setInterval(() => {
       if (this.state !== 'playing') return;
-      if (hole.hp <= 0) {
-        clearInterval(hole.intervalId);
-        return;
-      }
+      if (hole.hp <= 0) { clearInterval(hole.intervalId); return; }
       this.spawnMouseAt(row, col, 'normal');
     }, holeCfg.spawnInterval * 1000);
   }
@@ -419,9 +412,7 @@ class Game {
     if (idx > -1) {
       clearInterval(hole.intervalId);
       if (hole.element) hole.element.remove();
-      if (this.gridMap[hole.row][hole.col] === 'mousehole') {
-        this.gridMap[hole.row][hole.col] = null;
-      }
+      if (this.gridMap[hole.row][hole.col] === 'mousehole') this.gridMap[hole.row][hole.col] = null;
       this.mouseHoles.splice(idx, 1);
     }
   }
@@ -441,8 +432,8 @@ class Game {
     const mouse = {
       type,
       row, col,
-      x: col * 64 + 32,
-      y: row * 64 + 32,
+      x: col * this.cellSize + this.cellSize / 2,
+      y: row * this.cellSize + this.cellSize / 2,
       hp: baseDef.hp + hpBonus,
       maxHp: baseDef.hp + hpBonus,
       speed: baseDef.speed + speedBonus,
@@ -473,9 +464,7 @@ class Game {
       ];
       for (let n of neighbors) {
         if (n.row < 0 || n.row >= 9 || n.col < 0 || n.col >= 9) continue;
-        if (n.row === end.row && n.col === end.col) {
-          return path.slice(1).concat([{ row: n.row, col: n.col }]);
-        }
+        if (n.row === end.row && n.col === end.col) return path.slice(1).concat([{ row: n.row, col: n.col }]);
         const key = `${n.row},${n.col}`;
         if (!visited.has(key)) {
           visited.add(key);
@@ -518,12 +507,12 @@ class Game {
           continue;
         }
         const targetNode = m.path[m.pathIndex];
-        const targetX = targetNode.col * 64 + 32;
-        const targetY = targetNode.row * 64 + 32;
+        const targetX = targetNode.col * this.cellSize + this.cellSize / 2;
+        const targetY = targetNode.row * this.cellSize + this.cellSize / 2;
         const dx = targetX - m.x;
         const dy = targetY - m.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const moveSpeed = m.speed * 64 * delta;
+        const moveSpeed = m.speed * this.cellSize * delta;
         if (dist <= moveSpeed + 2) {
           m.x = targetX;
           m.y = targetY;
@@ -581,7 +570,6 @@ class Game {
       return;
     }
     const atkCfg = this.config.infiniteLevel.mouseAttack;
-
     if (mouse.attackTarget.type) {
       const building = mouse.attackTarget;
       if (!this.buildings.includes(building) || building.hp <= 0) {
@@ -614,9 +602,7 @@ class Game {
       this.updateResourceDisplay();
       mouse.farmStayTimer = (mouse.farmStayTimer || 0) + atkCfg.attackInterval;
       if (this.resources[resType] <= 0 || mouse.farmStayTimer >= atkCfg.maxFarmStay) {
-        if (this.resources[resType] <= 0) {
-          this.removeFarmPlot(plot);
-        }
+        if (this.resources[resType] <= 0) this.removeFarmPlot(plot);
         mouse.state = 'moving';
         mouse.attackTarget = null;
         mouse.element.style.transform = '';
@@ -641,14 +627,12 @@ class Game {
       for (let cell of cells) {
         const left = parseInt(cell.style.left);
         const top = parseInt(cell.style.top);
-        if (left === plot.col * 64 && top === plot.row * 64) {
+        if (left === plot.col * this.cellSize && top === plot.row * this.cellSize) {
           cell.remove();
           break;
         }
       }
-      if (this.farmPlots.length === 0) {
-        this.gameOver();
-      }
+      if (this.farmPlots.length === 0) this.gameOver();
     }
   }
 
@@ -657,9 +641,7 @@ class Game {
     const dmg = this.config.farmhouse.damagePerMouse;
     this.farmhouse.hp = Math.max(0, this.farmhouse.hp - dmg);
     this.updateFarmhouseHP();
-    if (this.farmhouse.hp <= 0) {
-      this.gameOver();
-    }
+    if (this.farmhouse.hp <= 0) this.gameOver();
   }
 
   destroyBuilding(building) {
@@ -709,8 +691,8 @@ class Game {
       const cooldown = 1 / def.attackSpeed;
       if (now - building.lastAttackTime < cooldown * 1000) continue;
 
-      const bx = building.col * 64 + 32;
-      const by = building.row * 64 + 32;
+      const bx = building.col * this.cellSize + this.cellSize / 2;
+      const by = building.row * this.cellSize + this.cellSize / 2;
       let closestMouse = null;
       let closestDist = Infinity;
       for (let m of this.mice) {
@@ -741,9 +723,7 @@ class Game {
         }
         const el = building.element;
         el.style.transform = `translate(${strikeX}px, ${strikeY}px)`;
-        setTimeout(() => {
-          if (el) el.style.transform = 'translate(0, 0)';
-        }, 150);
+        setTimeout(() => { if (el) el.style.transform = 'translate(0, 0)'; }, 150);
 
         if (closestMouse.hp <= 0) {
           this.killCount++;

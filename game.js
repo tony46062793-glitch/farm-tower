@@ -7,15 +7,14 @@ class Game {
     this.mice = [];
     this.farmPlots = [];
     this.farmhouse = null;
-    this.mouseHoles = [];
-    this.outerHoles = [];
+    this.mouseHoles = [];        // 內部洞（可被破壞）
+    this.outerHoles = [];        // 外圈洞（不可破壞）
     this.selectedBuildingType = null;
     this.playerData = { gold: 0, purchasedUpgrades: [] };
 
     this.elapsedTime = 0;
     this.killCount = 0;
-    // 種植計數
-    this.farmingCounts = { hay: 0, corn: 0 };
+    this.farmingCounts = { hay: 0, corn: 0 }; // 種植等級
 
     this.timerInterval = null;
     this.outerHoleSpawnInterval = null;
@@ -25,13 +24,14 @@ class Game {
     this.lastTimestamp = 0;
 
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
-    this.cellSize = this.config.grid.cellSize;
+    this.cellSize = this.config.grid.cellSize;   // 48
 
     this.loadPlayerData();
     this.initUI();
     this.renderInitialBoard();
   }
 
+  // ========== 存檔 ==========
   loadPlayerData() {
     const saved = localStorage.getItem('farmTowerSave');
     if (saved) {
@@ -51,10 +51,12 @@ class Game {
     }));
     this.updateResourceDisplay();
   }
+
+  // ========== 加成計算 ==========
   getGlobalAttackBonus() {
     let bonus = 0;
     for (let id of this.playerData.purchasedUpgrades) {
-      const card = this.config.shopCards.find(c => c.id === id);
+      const card = this.config.shopCards.find(c => c.id === id && c.type === 'upgrade');
       if (card?.effect.globalAttack) bonus += card.effect.globalAttack;
     }
     return bonus;
@@ -62,7 +64,7 @@ class Game {
   getStartResourceBonus() {
     let bonus = { hay: 0, corn: 0 };
     for (let id of this.playerData.purchasedUpgrades) {
-      const card = this.config.shopCards.find(c => c.id === id);
+      const card = this.config.shopCards.find(c => c.id === id && c.type === 'upgrade');
       if (card?.effect.bonusStart) {
         bonus.hay += card.effect.bonusStart.hay || 0;
         bonus.corn += card.effect.bonusStart.corn || 0;
@@ -71,6 +73,7 @@ class Game {
     return bonus;
   }
 
+  // ========== UI 初始化 ==========
   initUI() {
     this.boardEl = document.getElementById('game-board');
     this.timerEl = document.getElementById('timer');
@@ -89,12 +92,12 @@ class Game {
     this.boardEl.addEventListener('click', (e) => this.onBoardClick(e));
 
     this.createBuildButtons();
-    this.createFarmingButtons();   // 取代原本的 createResourceButtons
+    this.createFarmingButtons();
     this.updateResourceDisplay();
     this.updateShopItems();
   }
 
-  // ── 建築按鈕（含提示） ──
+  // ========== 右側按鈕：建造防禦（含提示） ==========
   createBuildButtons() {
     this.buildButtonsEl.innerHTML = '';
     for (let key in this.config.buildings) {
@@ -134,7 +137,7 @@ class Game {
     }
   }
 
-  // ── 種植按鈕（取代資源購買按鈕） ──
+  // ========== 右側按鈕：種植作物 ==========
   createFarmingButtons() {
     this.resourceButtonsEl.innerHTML = '';
     const farming = this.config.farming;
@@ -159,11 +162,11 @@ class Game {
     this.playerData.gold -= farm.cost;
     this.farmingCounts[type] = (this.farmingCounts[type] || 0) + 1;
     this.savePlayerData();
-    this.createFarmingButtons(); // 更新按鈕顯示
+    this.createFarmingButtons();
     this.showMessage(`購買了 ${farm.name}！現在每秒 +${farm.perSecond * this.farmingCounts[type]} ${this.config.resources[farm.resource].name}`);
   }
 
-  // 每秒生產資源（在計時器中呼叫）
+  // 每秒生產 (由計時器觸發)
   produceFarming() {
     let produced = false;
     if (this.farmingCounts.hay > 0) {
@@ -189,6 +192,7 @@ class Game {
     this.showMessage(`已選擇 ${this.config.buildings[id].name}，點擊空地建造`);
   }
 
+  // ========== 初始棋盤繪製 ==========
   renderInitialBoard() {
     const level = this.config.infiniteLevel;
     this.resources = { ...level.initialResources };
@@ -205,6 +209,7 @@ class Game {
     this.selectedBuildingType = null;
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
 
+    // 繪製農田
     this.farmPlots = level.farmPlots.map(p => ({ ...p }));
     for (let plot of this.farmPlots) {
       this.gridMap[plot.row][plot.col] = 'farmplot';
@@ -216,6 +221,7 @@ class Game {
       this.boardEl.appendChild(cell);
     }
 
+    // 繪製農舍
     const fhCfg = level.farmhouse;
     this.farmhouse = {
       row: fhCfg.row,
@@ -338,26 +344,12 @@ class Game {
     building.element = el;
   }
 
-  // ── 商店中的資源購買（移到彈窗內） ──
-  buyResourceFromShop(key) {
-    if (this.state !== 'playing' && this.state !== 'waiting') return;
-    const shop = this.config.resourceShop[key];
-    if (!shop || this.playerData.gold < shop.cost) {
-      this.showMessage('金幣不足');
-      return;
-    }
-    this.playerData.gold -= shop.cost;
-    this.resources[key] = (this.resources[key] || 0) + shop.amount;
-    this.updateResourceDisplay();
-    this.savePlayerData();
-    this.showMessage(`購買了 ${this.config.resources[key].name} +${shop.amount}`);
-  }
-
+  // ========== 計時器與生成 ==========
   startTimers() {
     this.timerInterval = setInterval(() => {
       this.elapsedTime++;
       this.updateTimerDisplay();
-      this.produceFarming();   // 每秒生產
+      this.produceFarming();
     }, 1000);
 
     this.startOuterHoleSpawn();
@@ -382,6 +374,7 @@ class Game {
     this.gameLoopId = null;
   }
 
+  // --- 外圈洞生成 (不可破壞) ---
   startOuterHoleSpawn() {
     if (this.outerHoleSpawnInterval) clearInterval(this.outerHoleSpawnInterval);
     const interval = this.config.infiniteLevel.outerHoleSpawnInterval * 1000;
@@ -394,6 +387,7 @@ class Game {
   trySpawnOuterHole() {
     const max = this.config.infiniteLevel.outerHoleMax;
     if (this.outerHoles.length >= max) return;
+
     const candidates = [];
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
@@ -428,6 +422,7 @@ class Game {
     }, holeCfg.spawnInterval * 1000);
   }
 
+  // --- 內部洞生成 (僅當外圈洞滿) ---
   startInnerHoleSpawning() {
     if (this.innerHoleSpawnInterval) clearInterval(this.innerHoleSpawnInterval);
     const interval = this.config.infiniteLevel.innerHoleSpawnInterval * 1000;
@@ -441,6 +436,7 @@ class Game {
     if (this.outerHoles.length < this.config.infiniteLevel.outerHoleMax) return;
     const max = this.config.infiniteLevel.innerHoleMax;
     if (this.mouseHoles.length >= max) return;
+
     const empty = [];
     for (let r = 1; r <= 7; r++) {
       for (let c = 1; c <= 7; c++) {
@@ -484,6 +480,7 @@ class Game {
     }
   }
 
+  // ========== 老鼠生成與移動 ==========
   spawnMouseAt(row, col, type) {
     const baseDef = this.config.infiniteLevel.spawn[type];
     if (!baseDef) return;
@@ -531,7 +528,9 @@ class Game {
       ];
       for (let n of neighbors) {
         if (n.row < 0 || n.row >= 9 || n.col < 0 || n.col >= 9) continue;
-        if (n.row === end.row && n.col === end.col) return path.slice(1).concat([{ row: n.row, col: n.col }]);
+        if (n.row === end.row && n.col === end.col) {
+          return path.slice(1).concat([{ row: n.row, col: n.col }]);
+        }
         const key = `${n.row},${n.col}`;
         if (!visited.has(key)) {
           visited.add(key);
@@ -552,6 +551,7 @@ class Game {
     mouse.element = el;
   }
 
+  // ========== 遊戲循環 ==========
   gameLoop(now) {
     if (this.state !== 'playing') return;
     const delta = Math.min((now - this.lastTimestamp) / 1000, 0.1);
@@ -726,6 +726,7 @@ class Game {
     this.mice.splice(index, 1);
   }
 
+  // ========== 貂洞摧毀內部洞 (含冷卻) ==========
   ferretClearInnerHoles(now) {
     const ferretDef = this.config.buildings.ferretDen;
     const range = ferretDef.ferretRange;
@@ -754,13 +755,14 @@ class Game {
     }
   }
 
+  // ========== 建築攻擊 (含動畫) ==========
   buildingAttack(now) {
     const globalAtk = this.getGlobalAttackBonus();
     const hasDog = this.buildings.some(b => b.type === 'dogHouse');
     const hasFerret = this.buildings.some(b => b.type === 'ferretDen');
     let extraAtk = 0;
-    if (hasDog) extraAtk += 1;
-    if (hasFerret) extraAtk += 2;
+    if (hasDog) extraAtk += 1;   // 犬窩全體+1
+    if (hasFerret) extraAtk += 2; // 貂洞全體+2
     const totalBonus = globalAtk + extraAtk;
 
     for (let building of this.buildings) {
@@ -789,6 +791,7 @@ class Game {
         closestMouse.element.style.filter = 'brightness(2)';
         setTimeout(() => { if (closestMouse.element) closestMouse.element.style.filter = ''; }, 100);
 
+        // 攻擊動畫
         const m = closestMouse;
         const offsetX = m.x - bx;
         const offsetY = m.y - by;
@@ -826,6 +829,7 @@ class Game {
     }
   }
 
+  // ========== 遊戲結束 ==========
   gameOver() {
     if (this.state !== 'playing') return;
     this.stopAllTimers();
@@ -855,7 +859,7 @@ class Game {
     this.btnStart.addEventListener('click', () => this.startGame());
   }
 
-  // ── 商店（包含資源購買 + 升級卡片） ──
+  // ========== 商店 ==========
   openShop() {
     this.updateShopItems();
     this.shopModal.classList.remove('hidden');
@@ -866,64 +870,79 @@ class Game {
     const container = document.getElementById('shop-items');
     container.innerHTML = '';
 
-    // 1. 資源購買區塊
-    const resTitle = document.createElement('h3');
-    resTitle.textContent = '🛍️ 購買資源';
-    resTitle.style.marginBottom = '8px';
-    container.appendChild(resTitle);
-    const order = ['hay', 'corn', 'meatEgg', 'meat'];
-    for (let key of order) {
-      const shop = this.config.resourceShop[key];
-      const info = this.config.resources[key];
-      const div = document.createElement('div');
-      div.className = 'shop-item';
-      div.innerHTML = `
-        <div class="shop-item-info">
-          <strong>${info.emoji} ${info.name}</strong>
-          <span>獲得 ${shop.amount}，花費 ${shop.cost}💰</span>
-        </div>
-        <button ${this.playerData.gold < shop.cost ? 'disabled' : ''}>
-          購買 (${shop.cost}💰)
-        </button>
-      `;
-      div.querySelector('button').addEventListener('click', () => this.buyResourceFromShop(key));
-      container.appendChild(div);
-    }
+    const resourcesGroup = document.createElement('div');
+    resourcesGroup.innerHTML = '<h3>🛍️ 購買資源</h3>';
+    const upgradesGroup = document.createElement('div');
+    upgradesGroup.innerHTML = '<h3>⬆️ 永久升級</h3>';
+    container.appendChild(resourcesGroup);
+    container.appendChild(upgradesGroup);
 
-    // 2. 升級卡片區塊
-    const cardTitle = document.createElement('h3');
-    cardTitle.textContent = '⬆️ 永久升級';
-    cardTitle.style.marginTop = '16px';
-    cardTitle.style.marginBottom = '8px';
-    container.appendChild(cardTitle);
     for (let card of this.config.shopCards) {
-      const bought = this.playerData.purchasedUpgrades.includes(card.id);
       const div = document.createElement('div');
       div.className = 'shop-item';
+
+      let buttonDisabled = false;
+      let buttonText = '';
+
+      if (card.type === 'resource') {
+        buttonDisabled = this.playerData.gold < card.cost;
+        buttonText = `購買 (💰${card.cost})`;
+      } else {
+        const bought = this.playerData.purchasedUpgrades.includes(card.id);
+        buttonDisabled = bought || this.playerData.gold < card.cost;
+        buttonText = bought ? '已購買' : `💰${card.cost}`;
+      }
+
       div.innerHTML = `
         <div class="shop-item-info">
           <strong>${card.name}</strong>
           <span>${card.desc}</span>
         </div>
-        <button data-card-id="${card.id}" ${bought || this.playerData.gold < card.cost ? 'disabled' : ''}>
-          ${bought ? '已購買' : `💰${card.cost}`}
-        </button>
+        <button ${buttonDisabled ? 'disabled' : ''}>${buttonText}</button>
       `;
+
       div.querySelector('button').addEventListener('click', () => this.buyCard(card.id));
-      container.appendChild(div);
+
+      if (card.type === 'resource') {
+        resourcesGroup.appendChild(div);
+      } else {
+        upgradesGroup.appendChild(div);
+      }
     }
   }
 
   buyCard(id) {
     const card = this.config.shopCards.find(c => c.id === id);
-    if (!card || this.playerData.gold < card.cost || this.playerData.purchasedUpgrades.includes(id)) return;
-    this.playerData.gold -= card.cost;
-    this.playerData.purchasedUpgrades.push(id);
-    this.savePlayerData();
-    this.updateShopItems();
-    this.showMessage(`購買了 ${card.name}！`);
+    if (!card) return;
+
+    if (card.type === 'resource') {
+      if (this.playerData.gold < card.cost) {
+        this.showMessage('金幣不足');
+        return;
+      }
+      this.playerData.gold -= card.cost;
+      for (let res in card.effect) {
+        this.resources[res] = (this.resources[res] || 0) + card.effect[res];
+      }
+      this.updateResourceDisplay();
+      this.savePlayerData();
+      this.updateShopItems();
+      this.showMessage(`購買了 ${card.name}！`);
+    } else {
+      if (this.playerData.purchasedUpgrades.includes(id)) return;
+      if (this.playerData.gold < card.cost) {
+        this.showMessage('金幣不足');
+        return;
+      }
+      this.playerData.gold -= card.cost;
+      this.playerData.purchasedUpgrades.push(id);
+      this.savePlayerData();
+      this.updateShopItems();
+      this.showMessage(`購買了 ${card.name}！`);
+    }
   }
 
+  // ========== UI 工具 ==========
   updateResourceDisplay() {
     document.getElementById('res-hay').textContent = this.resources.hay;
     document.getElementById('res-corn').textContent = this.resources.corn;

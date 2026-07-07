@@ -1,7 +1,7 @@
 class Game {
   constructor(config) {
     this.config = config;
-    this.state = 'waiting';
+    this.state = 'waiting';   // waiting | playing | gameover | tutorial
     this.resources = {};
     this.buildings = [];
     this.mice = [];
@@ -29,6 +29,7 @@ class Game {
     this.loadPlayerData();
     this.initUI();
     this.renderInitialBoard();
+    this.showTutorialIfNeeded();   // 檢查是否需要顯示教學
   }
 
   // ========== 存檔 ==========
@@ -90,6 +91,12 @@ class Game {
     this.btnStart.addEventListener('click', () => this.startGame());
     document.getElementById('btn-play-again').addEventListener('click', () => this.restartGame());
     this.boardEl.addEventListener('click', (e) => this.onBoardClick(e));
+
+    // 教學彈窗按鈕
+    const btnTutorialOk = document.getElementById('btn-tutorial-ok');
+    if (btnTutorialOk) {
+      btnTutorialOk.addEventListener('click', () => this.closeTutorial());
+    }
 
     this.createBuildButtons();
     this.createFarmingButtons();
@@ -246,8 +253,9 @@ class Game {
     this.resultModal.classList.add('hidden');
   }
 
+  // ========== 開始 / 重新開始 ==========
   startGame() {
-    if (this.state === 'playing') return;
+    if (this.state !== 'waiting') return;   // 只有 waiting 狀態才能開始
     this.state = 'playing';
     this.elapsedTime = 0;
     this.killCount = 0;
@@ -939,6 +947,33 @@ class Game {
       this.savePlayerData();
       this.updateShopItems();
       this.showMessage(`購買了 ${card.name}！`);
+    }
+  }
+
+  // ========== 教學引導 ==========
+  showTutorialIfNeeded() {
+    const seen = localStorage.getItem('farmTowerTutorialSeen');
+    if (!seen) {
+      this.state = 'tutorial';
+      const modal = document.getElementById('tutorial-modal');
+      if (modal) modal.classList.remove('hidden');
+      if (this.btnStart) {
+        this.btnStart.disabled = true;
+        this.btnStart.textContent = '請先完成教學';
+      }
+    }
+  }
+
+  closeTutorial() {
+    const modal = document.getElementById('tutorial-modal');
+    if (modal) modal.classList.add('hidden');
+    localStorage.setItem('farmTowerTutorialSeen', 'true');
+    this.state = 'waiting';
+    if (this.btnStart) {
+      this.btnStart.disabled = false;
+      this.btnStart.textContent = '開始遊戲';
+      this.btnStart.removeEventListener('click', this.restartGame);
+      this.btnStart.addEventListener('click', () => this.startGame());
     }
   }
 

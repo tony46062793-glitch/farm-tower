@@ -14,7 +14,7 @@ class Game {
 
     this.elapsedTime = 0;
     this.killCount = 0;
-    this.farmingCounts = { hay: 0, corn: 0 }; // 種植等級
+    this.farmingCounts = { hay: 1, corn: 1 }; // 種植等級
 
     this.timerInterval = null;
     this.outerHoleSpawnInterval = null;
@@ -40,7 +40,7 @@ class Game {
         const data = JSON.parse(saved);
         this.playerData.gold = data.gold || 0;
         this.playerData.purchasedUpgrades = data.purchasedUpgrades || [];
-        this.farmingCounts = data.farmingCounts || { hay: 0, corn: 0 };
+        this.farmingCounts = data.farmingCounts || { hay: 1, corn: 1 };
       } catch (e) {}
     }
   }

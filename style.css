@@ -247,3 +247,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     line-height: 1.2;
     font-variant-numeric: tabular-nums; /* 等寬數字 */
 }
+@media (max-width: 650px) {
+    .resource-card {
+        flex: 1 1 auto;
+        min-width: 80px;
+    }
+}

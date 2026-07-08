@@ -270,16 +270,45 @@ button.selected {
 </head>
 <body>
 
-<div id="game-container">
-  <!-- 左側資源 -->
-  <div id="left-panel">
-    <div class="resource-card"><span class="emoji">🌿</span><span class="value" id="res-hay">0</span><small>牧草</small></div>
-    <div class="resource-card"><span class="emoji">🌽</span><span class="value" id="res-corn">0</span><small>玉米</small></div>
-    <div class="resource-card"><span class="emoji">🥚</span><span class="value" id="res-meatEgg">0</span><small>肉蛋</small></div>
-    <div class="resource-card"><span class="emoji">🍖</span><span class="value" id="res-meat">0</span><small>肉食</small></div>
-    <div class="resource-card" style="background:#fff8e1;"><span class="emoji">💰</span><span class="value" id="res-gold">0</span><small>金幣</small></div>
+<!-- 左側資源 -->
+<div id="left-panel">
+    <div class="resource-card">
+        <span class="emoji">🌿</span>
+        <div class="res-info">
+            <span class="res-name">牧草</span>
+            <span class="value" id="res-hay">0000</span>
+        </div>
+    </div>
+    <div class="resource-card">
+        <span class="emoji">🌽</span>
+        <div class="res-info">
+            <span class="res-name">玉米</span>
+            <span class="value" id="res-corn">0000</span>
+        </div>
+    </div>
+    <div class="resource-card">
+        <span class="emoji">🥚</span>
+        <div class="res-info">
+            <span class="res-name">肉蛋</span>
+            <span class="value" id="res-meatEgg">0000</span>
+        </div>
+    </div>
+    <div class="resource-card">
+        <span class="emoji">🍖</span>
+        <div class="res-info">
+            <span class="res-name">肉食</span>
+            <span class="value" id="res-meat">0000</span>
+        </div>
+    </div>
+    <div class="resource-card" style="background:#fff8e1;">
+        <span class="emoji">💰</span>
+        <div class="res-info">
+            <span class="res-name">金幣</span>
+            <span class="value" id="res-gold">0</span>
+        </div>
+    </div>
     <div id="timer-display">⏱️ <span id="timer">00:00</span></div>
-  </div>
+</div>
 
   <!-- 中間棋盤 -->
   <div id="center-area">

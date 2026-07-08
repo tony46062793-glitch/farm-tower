@@ -209,10 +209,36 @@ button.selected {
 .action-btn { background: #8bc34a; color: #1b5e20; }
 .shop-btn { background: #ffd54f; color: #f57f17; }
 
-/* 彈窗保持不變 */
-.modal { /* 與之前相同 */ }
+/* 彈窗 */
+.modal {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 100; backdrop-filter: blur(2px);
+}
 .modal.hidden { display: none; }
-.modal-content { /* 略，維持原樣 */ }
+.modal-content {
+  background: #fffde7;
+  border: 4px solid #8b5a2b;
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 280px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-content h2 { margin-bottom: 16px; color: #3e2723; }
+#shop-items { text-align: left; margin: 16px 0; max-height: 300px; overflow-y: auto; }
+.shop-item {
+  background: #fff; border: 1px solid #d7ccc8;
+  padding: 8px; margin-bottom: 6px; border-radius: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.shop-item-info strong { font-size: 14px; display: block; color: #5d4037; }
+.shop-item-info span { font-size: 11px; color: #795548; }
 
 /* 手機直式時將左右面板移到棋盤下方，並放寬 */
 @media (max-width: 650px) {

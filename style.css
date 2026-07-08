@@ -213,3 +213,37 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   background: #4caf50;
   transition: width 0.2s;
 }
+/* 資源卡片新佈局 */
+.resource-card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+}
+
+.resource-card .emoji {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.res-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.res-name {
+    font-size: 11px;
+    color: #795548;
+    line-height: 1;
+}
+
+.value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #3e2723;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums; /* 等寬數字 */
+}

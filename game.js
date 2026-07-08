@@ -998,12 +998,13 @@ class Game {
 
   // ========== UI 工具 ==========
   updateResourceDisplay() {
-    document.getElementById('res-hay').textContent = this.resources.hay;
-    document.getElementById('res-corn').textContent = this.resources.corn;
-    document.getElementById('res-meatEgg').textContent = this.resources.meatEgg || 0;
-    document.getElementById('res-meat').textContent = this.resources.meat || 0;
-    document.getElementById('res-gold').textContent = this.playerData.gold;
-  }
+    const pad = (val) => String(val).padStart(4, '0');
+    document.getElementById('res-hay').textContent = pad(this.resources.hay);
+    document.getElementById('res-corn').textContent = pad(this.resources.corn);
+    document.getElementById('res-meatEgg').textContent = pad(this.resources.meatEgg || 0);
+    document.getElementById('res-meat').textContent = pad(this.resources.meat || 0);
+    document.getElementById('res-gold').textContent = this.playerData.gold; // 金幣不補零
+}
 
   updateTimerDisplay() {
     this.timerEl.textContent = this.formatTime(this.elapsedTime);

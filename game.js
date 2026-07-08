@@ -924,71 +924,51 @@ class Game {
     if (!card) return;
 
     if (card.type === 'resource') {
-      if (this.playerData.gold < card.cost) {
-        this.showMessage('金幣不足');
-        return;
-      }
-      this.playerData.gold -= card.cost;
-      for (let res in card.effect) {
-        this.resources[res] = (this.resources[res] || 0) + card.effect[res];
-      }
-      this.updateResourceDisplay();
-      this.savePlayerData();
-      this.updateShopItems();
-      this.showMessage(`購買了 ${card.name}！`);
-      // 檢查是否為通關證明
-if (card.id === 'win_pass' && !this.playerData.purchasedUpgrades.includes(card.id)) {
-  // 直接勝利！
-  this.stopAllTimers();
-  this.state = 'gameover';
-  this.mice.forEach(m => m.element?.remove());
-  this.mice = [];
-  const survivalGold = Math.floor(this.elapsedTime / 10) + 500; // 額外獎勵
-  this.playerData.gold += survivalGold;
-  this.savePlayerData();
-  document.getElementById('result-title').textContent = '🎉 你成功通關了！';
-  document.getElementById('result-detail').textContent =
-    `你購買了通關證明，農場安全了！\n存活時間：${this.formatTime(this.elapsedTime)}\n額外獎勵：${survivalGold} 💰`;
-  this.resultModal.classList.remove('hidden');
-  this.btnStart.textContent = '開始遊戲';
-  this.btnStart.removeEventListener('click', this.restartGame);
-  this.btnStart.addEventListener('click', () => this.restartGame());
-  return; // 不再繼續執行原本的購買邏輯
-}
-    } } else {
-  // 永久升級
-  if (this.playerData.purchasedUpgrades.includes(id)) return;
-  if (this.playerData.gold < card.cost) {
-    this.showMessage('金幣不足');
-    return;
-  }
-  this.playerData.gold -= card.cost;
-  this.playerData.purchasedUpgrades.push(id);
-  this.savePlayerData();
-  this.updateShopItems();
-  this.showMessage(`購買了 ${card.name}！`);
+        // 資源購買（可重複）
+        if (this.playerData.gold < card.cost) {
+            this.showMessage('金幣不足');
+            return;
+        }
+        this.playerData.gold -= card.cost;
+        for (let res in card.effect) {
+            this.resources[res] = (this.resources[res] || 0) + card.effect[res];
+        }
+        this.updateResourceDisplay();
+        this.savePlayerData();
+        this.updateShopItems();
+        this.showMessage(`購買了 ${card.name}！`);
+    } else {
+        // 永久升級（限購一次）
+        if (this.playerData.purchasedUpgrades.includes(id)) return;
+        if (this.playerData.gold < card.cost) {
+            this.showMessage('金幣不足');
+            return;
+        }
+        this.playerData.gold -= card.cost;
+        this.playerData.purchasedUpgrades.push(id);
+        this.savePlayerData();
+        this.updateShopItems();
+        this.showMessage(`購買了 ${card.name}！`);
 
-  // 🎯 通關證明：即時勝利
-  if (card.id === 'win_pass') {
-    this.stopAllTimers();
-    this.state = 'gameover';
-    this.mice.forEach(m => m.element?.remove());
-    this.mice = [];
-    const survivalGold = Math.floor(this.elapsedTime / 10) + 500;
-    this.playerData.gold += survivalGold;
-    this.savePlayerData();
-    document.getElementById('result-title').textContent = '🎉 你成功通關了！';
-    document.getElementById('result-detail').textContent =
-      `你購買了通關證明，農場安全了！\n存活時間：${this.formatTime(this.elapsedTime)}\n額外獎勵：${survivalGold} 💰`;
-    this.resultModal.classList.remove('hidden');
-    this.btnStart.textContent = '開始遊戲';
-    this.btnStart.removeEventListener('click', this.restartGame);
-    this.btnStart.addEventListener('click', () => this.restartGame());
-  }
-}
+        // 🎯 通關證明：即時勝利
+        if (card.id === 'win_pass') {
+            this.stopAllTimers();
+            this.state = 'gameover';
+            this.mice.forEach(m => m.element?.remove());
+            this.mice = [];
+            const survivalGold = Math.floor(this.elapsedTime / 10) + 500; // 基礎獎勵 + 額外 500
+            this.playerData.gold += survivalGold;
+            this.savePlayerData();
+            document.getElementById('result-title').textContent = '🎉 你成功通關了！';
+            document.getElementById('result-detail').textContent =
+                `你購買了通關證明，農場安全了！\n存活時間：${this.formatTime(this.elapsedTime)}\n額外獎勵：${survivalGold} 💰`;
+            this.resultModal.classList.remove('hidden');
+            this.btnStart.textContent = '開始遊戲';
+            this.btnStart.removeEventListener('click', this.restartGame);
+            this.btnStart.addEventListener('click', () => this.restartGame());
+        }
     }
-  }
-
+}
   // ========== 教學引導 ==========
   showTutorialIfNeeded() {
     const seen = localStorage.getItem('farmTowerTutorialSeen');

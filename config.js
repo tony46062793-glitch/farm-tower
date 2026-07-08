@@ -128,6 +128,7 @@ const CONFIG = {
     // 永久升級（限購一次）
     { id: 'atkUp1', name: '鋒利鷹爪', desc: '所有建築攻擊 +1', cost: 50, type: 'upgrade', effect: { globalAttack: 1 } },
     { id: 'atkUp2', name: '強化巢穴', desc: '所有建築攻擊 +2', cost: 120, type: 'upgrade', effect: { globalAttack: 2 } },
-    { id: 'startRes', name: '豐收禮包', desc: '起始牧草、玉米各 +30', cost: 80, type: 'upgrade', effect: { bonusStart: { hay: 30, corn: 30 } } }
+    { id: 'startRes', name: '豐收禮包', desc: '起始牧草、玉米各 +30', cost: 80, type: 'upgrade', effect: { bonusStart: { hay: 30, corn: 30 }}} } }
+    { id: 'win_pass', name: '通關證明', desc: '花費 100 金幣，即時勝利！', cost: 100, type: 'upgrade', effect: { win: true } }
   ]
 };

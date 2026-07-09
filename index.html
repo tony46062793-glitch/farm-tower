@@ -12,338 +12,167 @@
 body {
   background: #2d4a22;
   font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 10px;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; padding: 10px;
 }
-
 #game-container {
-  background: #f5e6c8;
-  border: 4px solid #8b5a2b;
-  border-radius: 16px;
-  padding: 15px;
-  width: 100%;
-  max-width: 900px;
+  background: #f5e6c8; border: 4px solid #8b5a2b; border-radius: 16px;
+  padding: 15px; width: 100%; max-width: 900px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  display: grid;
-  grid-template-columns: 120px 1fr 140px;
-  grid-template-rows: auto auto;
-  gap: 10px;
+  display: grid; grid-template-columns: 120px 1fr 140px; grid-template-rows: auto auto; gap: 10px;
 }
-
-/* 左側資源 */
-#left-panel {
-  grid-column: 1; grid-row: 1;
-  display: flex; flex-direction: column; gap: 6px;
-}
+#left-panel { grid-column:1; grid-row:1; display:flex; flex-direction:column; gap:6px; }
 .resource-card {
-  background: #fffde7;
-  border: 1px solid #a5d6a7;
-  border-radius: 6px;
-  display: flex; align-items: center; gap: 4px;
-  padding: 4px 6px; font-size: 14px;
+  background:#fffde7; border:1px solid #a5d6a7; border-radius:6px;
+  display:flex; align-items:center; gap:4px; padding:4px 6px; font-size:14px;
 }
-.resource-card .emoji { font-size: 20px; }
-.res-info { display: flex; flex-direction: column; align-items: flex-end; flex-grow: 1; }
-.res-name { font-size: 10px; color: #795548; }
-.value { font-size: 15px; font-weight: bold; color: #3e2723; }
+.resource-card .emoji { font-size:20px; }
+.res-info { display:flex; flex-direction:column; align-items:flex-end; flex-grow:1; }
+.res-name { font-size:10px; color:#795548; }
+.value { font-size:15px; font-weight:bold; color:#3e2723; }
 #timer-display {
-  background: #3e2723; color: #ffcc80; font-size: 16px;
-  padding: 6px; text-align: center; border-radius: 6px; font-family: monospace;
+  background:#3e2723; color:#ffcc80; font-size:16px; padding:6px;
+  text-align:center; border-radius:6px; font-family:monospace;
 }
-
-/* 中間棋盤 */
-#center-area {
-  grid-column: 2; grid-row: 1;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
+#center-area { grid-column:2; grid-row:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 #game-board {
-  position: relative;
-  background: #c8e6c9;
-  border: 2px solid #6d4c41;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: crosshair;
+  position:relative; background:#c8e6c9; border:2px solid #6d4c41; border-radius:8px;
+  overflow:hidden; cursor:crosshair;
 }
-
-/* 所有棋盤元素的尺寸由 --cell-size 控制，且必須絕對定位 */
+/* 棋盤元素：絕對定位，尺寸由 CSS 變數控制 */
 .cell, .building, .mouse-hole {
-  position: absolute;
-  width: var(--cell-size);
-  height: var(--cell-size);
+  position:absolute;
+  width:var(--cell-size); height:var(--cell-size);
 }
 .cell {
-  display: flex; justify-content: center; align-items: center;
-  pointer-events: none;
-  font-size: calc(var(--cell-size) * 0.55);
+  display:flex; justify-content:center; align-items:center;
+  pointer-events:none; font-size:calc(var(--cell-size) * 0.55);
 }
 .building {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: rgba(255,255,200,0.5);
-  border-radius: 50%;
-  transition: transform 0.15s ease-out;
-  font-size: calc(var(--cell-size) * 0.55);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:rgba(255,255,200,0.5); border-radius:50%;
+  transition:transform 0.15s ease-out; font-size:calc(var(--cell-size) * 0.55);
 }
 .mouse-hole {
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.15);
-  border-radius: 50%;
-  font-size: calc(var(--cell-size) * 0.55);
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.15); border-radius:50%; font-size:calc(var(--cell-size) * 0.55);
 }
-
-/* 農舍特殊樣式，但一樣依賴 .building 的尺寸 */
 .farmhouse {
-  background: rgba(255, 215, 0, 0.3);
-  border-radius: 8px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background:rgba(255,215,0,0.3); border-radius:8px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
 }
-.farmhouse-emoji {
-  font-size: calc(var(--cell-size) * 0.5);
-  line-height: 1;
-}
+.farmhouse-emoji { font-size:calc(var(--cell-size) * 0.5); line-height:1; }
 .hp-bar-container {
-  width: 80%; height: 4px;
-  background: #ccc; border-radius: 2px;
-  margin-top: 2px; overflow: hidden;
+  width:80%; height:4px; background:#ccc; border-radius:2px;
+  margin-top:2px; overflow:hidden;
 }
-.hp-bar-fill {
-  height: 100%; background: #4caf50;
-  transition: width 0.2s;
-}
-
-/* 攻擊範圍指示器（尺寸由 JS 設定，保持 pixel） */
+.hp-bar-fill { height:100%; background:#4caf50; transition:width 0.2s; }
 .range-indicator {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  border: 2px dashed rgba(255, 255, 0, 0.6);
-  border-radius: 50%;
-  background: rgba(255, 255, 0, 0.1);
-  pointer-events: none; opacity: 0; transition: opacity 0.2s;
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  border:2px dashed rgba(255,255,0,0.6); border-radius:50%;
+  background:rgba(255,255,0,0.1); pointer-events:none; opacity:0; transition:opacity 0.2s;
 }
-.building:hover .range-indicator { opacity: 1; }
-
+.building:hover .range-indicator { opacity:1; }
 .mouse {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 3; pointer-events: none;
-  font-size: calc(var(--cell-size) * 0.5);
+  position:absolute; transform:translate(-50%,-50%);
+  z-index:3; pointer-events:none; font-size:calc(var(--cell-size) * 0.5);
 }
-
-/* 右側按鈕區 */
-#right-panel {
-  grid-column: 3; grid-row: 1;
-  display: flex; flex-direction: column; gap: 8px;
-}
+#right-panel { grid-column:3; grid-row:1; display:flex; flex-direction:column; gap:8px; }
 .panel-section h3 {
-  font-size: 14px; color: #5d4037;
-  border-bottom: 2px solid #d7ccc8;
-  padding-bottom: 2px; margin-bottom: 4px; text-align: center;
+  font-size:14px; color:#5d4037; border-bottom:2px solid #d7ccc8;
+  padding-bottom:2px; margin-bottom:4px; text-align:center;
 }
-#build-buttons, #resource-buttons {
-  display: flex; flex-direction: column; gap: 5px;
-}
-
+#build-buttons, #resource-buttons { display:flex; flex-direction:column; gap:5px; }
 button {
-  padding: 6px 8px; font-size: 13px; font-weight: bold;
-  border-radius: 6px; border: 2px solid #5d4037;
-  background: #ffe0b2; cursor: pointer;
-  white-space: nowrap;
-  display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding:6px 8px; font-size:13px; font-weight:bold; border-radius:6px;
+  border:2px solid #5d4037; background:#ffe0b2; cursor:pointer;
+  white-space:nowrap; display:flex; align-items:center; justify-content:center; gap:4px;
 }
-button:hover:not(:disabled) { background: #ffcc80; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.selected {
-  background: #ffb74d; border-color: #e65100;
-  box-shadow: 0 0 0 2px #e65100;
-}
-
-/* 底部控制列 */
+button:hover:not(:disabled) { background:#ffcc80; }
+button:disabled { opacity:0.5; cursor:not-allowed; }
+button.selected { background:#ffb74d; border-color:#e65100; box-shadow:0 0 0 2px #e65100; }
 #bottom-controls {
-  grid-column: 1 / -1; grid-row: 2;
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  padding-top: 8px; border-top: 2px dashed #d7ccc8;
+  grid-column:1 / -1; grid-row:2; display:flex; justify-content:space-between;
+  align-items:center; gap:10px; padding-top:8px; border-top:2px dashed #d7ccc8;
 }
-#message {
-  flex-grow: 1; text-align: center; color: #bf360c;
-  font-weight: bold; font-size: 14px;
-}
-.action-btn { background: #8bc34a; color: #1b5e20; }
-.shop-btn { background: #ffd54f; color: #f57f17; }
-
-/* 彈窗 */
+#message { flex-grow:1; text-align:center; color:#bf360c; font-weight:bold; font-size:14px; }
+.action-btn { background:#8bc34a; color:#1b5e20; }
+.shop-btn { background:#ffd54f; color:#f57f17; }
 .modal {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center;
-  z-index: 100; backdrop-filter: blur(2px);
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center;
+  z-index:100; backdrop-filter:blur(2px);
 }
-.modal.hidden { display: none; }
+.modal.hidden { display:none; }
 .modal-content {
-  background: #fffde7; border: 4px solid #8b5a2b; border-radius: 16px;
-  padding: 24px; min-width: 280px; max-width: 90vw; text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 80vh; overflow-y: auto;
+  background:#fffde7; border:4px solid #8b5a2b; border-radius:16px;
+  padding:24px; min-width:280px; max-width:90vw; text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.5); max-height:80vh; overflow-y:auto;
 }
-.modal-content h2 { margin-bottom: 16px; color: #3e2723; }
-#shop-items { text-align: left; margin: 16px 0; max-height: 300px; overflow-y: auto; }
+.modal-content h2 { margin-bottom:16px; color:#3e2723; }
+#shop-items { text-align:left; margin:16px 0; max-height:300px; overflow-y:auto; }
 .shop-item {
-  background: #fff; border: 1px solid #d7ccc8;
-  padding: 8px; margin-bottom: 6px; border-radius: 8px;
-  display: flex; justify-content: space-between; align-items: center;
+  background:#fff; border:1px solid #d7ccc8; padding:8px; margin-bottom:6px;
+  border-radius:8px; display:flex; justify-content:space-between; align-items:center;
 }
-.shop-item-info strong { font-size: 14px; display: block; color: #5d4037; }
-.shop-item-info span { font-size: 11px; color: #795548; }
-
-/* RWD：平板以下轉垂直 */
-@media (max-width: 700px) {
-  #game-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
-  }
-  #left-panel  { grid-column: 1; grid-row: 2; flex-direction: row; flex-wrap: wrap; justify-content: center; }
-  #center-area { grid-column: 1; grid-row: 1; }
-  #right-panel { grid-column: 1; grid-row: 3; flex-direction: row; flex-wrap: wrap; justify-content: center; }
-  #bottom-controls { grid-column: 1; grid-row: 4; }
-  #build-buttons, #resource-buttons { flex-direction: row; flex-wrap: wrap; }
+.shop-item-info strong { font-size:14px; display:block; color:#5d4037; }
+.shop-item-info span { font-size:11px; color:#795548; }
+@media (max-width:700px) {
+  #game-container { grid-template-columns:1fr; grid-template-rows:auto auto auto auto; }
+  #left-panel  { grid-column:1; grid-row:2; flex-direction:row; flex-wrap:wrap; justify-content:center; }
+  #center-area { grid-column:1; grid-row:1; }
+  #right-panel { grid-column:1; grid-row:3; flex-direction:row; flex-wrap:wrap; justify-content:center; }
+  #bottom-controls { grid-column:1; grid-row:4; }
+  #build-buttons, #resource-buttons { flex-direction:row; flex-wrap:wrap; }
 }
 </style>
 </head>
 <body>
-
 <div id="game-container">
-  <!-- 左側資源 -->
   <div id="left-panel">
-    <div class="resource-card">
-      <span class="emoji">🌿</span>
-      <div class="res-info">
-        <span class="res-name">牧草</span>
-        <span class="value" id="res-hay">0000</span>
-      </div>
-    </div>
-    <div class="resource-card">
-      <span class="emoji">🌽</span>
-      <div class="res-info">
-        <span class="res-name">玉米</span>
-        <span class="value" id="res-corn">0000</span>
-      </div>
-    </div>
-    <div class="resource-card">
-      <span class="emoji">🥚</span>
-      <div class="res-info">
-        <span class="res-name">肉蛋</span>
-        <span class="value" id="res-meatEgg">0000</span>
-      </div>
-    </div>
-    <div class="resource-card">
-      <span class="emoji">🍖</span>
-      <div class="res-info">
-        <span class="res-name">肉食</span>
-        <span class="value" id="res-meat">0000</span>
-      </div>
-    </div>
-    <div class="resource-card" style="background:#fff8e1;">
-      <span class="emoji">💰</span>
-      <div class="res-info">
-        <span class="res-name">金幣</span>
-        <span class="value" id="res-gold">0</span>
-      </div>
-    </div>
+    <div class="resource-card"><span class="emoji">🌿</span><div class="res-info"><span class="res-name">牧草</span><span class="value" id="res-hay">0000</span></div></div>
+    <div class="resource-card"><span class="emoji">🌽</span><div class="res-info"><span class="res-name">玉米</span><span class="value" id="res-corn">0000</span></div></div>
+    <div class="resource-card"><span class="emoji">🥚</span><div class="res-info"><span class="res-name">肉蛋</span><span class="value" id="res-meatEgg">0000</span></div></div>
+    <div class="resource-card"><span class="emoji">🍖</span><div class="res-info"><span class="res-name">肉食</span><span class="value" id="res-meat">0000</span></div></div>
+    <div class="resource-card" style="background:#fff8e1;"><span class="emoji">💰</span><div class="res-info"><span class="res-name">金幣</span><span class="value" id="res-gold">0</span></div></div>
     <div id="timer-display">⏱️ <span id="timer">00:00</span></div>
   </div>
-
-  <!-- 中間棋盤 -->
   <div id="center-area">
     <div id="game-board"></div>
   </div>
-
-  <!-- 右側操作 -->
   <div id="right-panel">
-    <div class="panel-section">
-      <h3>🏰 建造防禦</h3>
-      <div id="build-buttons"></div>
-    </div>
-    <div class="panel-section">
-      <h3>🌱 種植作物</h3>
-      <div id="resource-buttons"></div>
-    </div>
+    <div class="panel-section"><h3>🏰 建造防禦</h3><div id="build-buttons"></div></div>
+    <div class="panel-section"><h3>🌱 種植作物</h3><div id="resource-buttons"></div></div>
   </div>
-
-  <!-- 底部控制 -->
   <div id="bottom-controls">
     <button id="btn-shop" class="shop-btn">🛒 商店</button>
     <div id="message"></div>
     <button id="btn-start" class="action-btn">開始遊戲</button>
   </div>
 </div>
-
-<!-- 彈窗內容與之前相同，此處省略，請複製你現有的三個彈窗 HTML -->
-<div id="shop-modal" class="modal hidden">
-  <div class="modal-content">
-    <h2>🛒 升級商店</h2>
-    <div id="shop-items"></div>
-    <button id="btn-close-shop">關閉</button>
-  </div>
-</div>
-
-<div id="result-modal" class="modal hidden">
-  <div class="modal-content">
-    <h2 id="result-title">😵 任務失敗…</h2>
-    <p id="result-detail" style="margin:16px 0; line-height:1.6; color:#5d4037;"></p>
-    <button id="btn-play-again" class="action-btn">再來一局</button>
-  </div>
-</div>
-
-<div id="tutorial-modal" class="modal hidden">
-  <div class="modal-content" style="text-align: left; line-height: 1.8;">
-    <h2>🌾 歡迎來到農夫守塔！</h2>
-    <p>📌 <strong>遊戲目標</strong>：在買到通關證明前，保護中央的農舍不被老鼠摧毀。</p>
-    <p>🛡️ <strong>如何防守</strong>：消耗資源建造防禦建築，牠們會自動攻擊路過的老鼠。</p>
-    <p>🐭 <strong>老鼠行為</strong>：老鼠會沿著最短路徑前進，並摧毀沿途的建築與農田，直到撞擊農舍。</p>
-    <p>🕳️ <strong>老鼠洞</strong>：外圈暗色區域會逐漸出現老鼠洞（最多 4 個）。當外圈滿 4 個後，內部白色區域也會開始出現可破壞的鼠洞，只有「貂洞」能清除牠們。</p>
-    <p>💰 <strong>資源與種植</strong>：使用金幣在右側種植作物，每秒自動產出資源與金幣，幫助你持續防禦。</p>
-    <p style="margin-top: 16px; text-align: center;">
-      <button id="btn-tutorial-ok" class="action-btn" style="font-size: 16px;">我知道了，開始遊戲！</button>
-    </p>
-  </div>
-</div>
-
+<div id="shop-modal" class="modal hidden"><div class="modal-content"><h2>🛒 升級商店</h2><div id="shop-items"></div><button id="btn-close-shop">關閉</button></div></div>
+<div id="result-modal" class="modal hidden"><div class="modal-content"><h2 id="result-title">😵 任務失敗…</h2><p id="result-detail" style="margin:16px 0; line-height:1.6; color:#5d4037;"></p><button id="btn-play-again" class="action-btn">再來一局</button></div></div>
+<div id="tutorial-modal" class="modal hidden"><div class="modal-content" style="text-align:left; line-height:1.8;"><h2>🌾 歡迎來到農夫守塔！</h2><p>📌 <strong>遊戲目標</strong>：在買到通關證明前，保護中央的農舍不被老鼠摧毀。</p><p>🛡️ <strong>如何防守</strong>：消耗資源建造防禦建築，牠們會自動攻擊路過的老鼠。</p><p>🐭 <strong>老鼠行為</strong>：老鼠會沿著最短路徑前進，並摧毀沿途的建築與農田，直到撞擊農舍。</p><p>🕳️ <strong>老鼠洞</strong>：外圈暗色區域會逐漸出現老鼠洞（最多 4 個）。當外圈滿 4 個後，內部白色區域也會開始出現可破壞的鼠洞，只有「貂洞」能清除牠們。</p><p>💰 <strong>資源與種植</strong>：使用金幣在右側種植作物，每秒自動產出資源與金幣，幫助你持續防禦。</p><p style="margin-top:16px; text-align:center;"><button id="btn-tutorial-ok" class="action-btn" style="font-size:16px;">我知道了，開始遊戲！</button></p></div></div>
 <script src="config.js"></script>
 <script src="game.js"></script>
 <script>
   function adjustCellSize() {
     const board = document.getElementById('game-board');
     if (!board) return;
-
-    const maxBoardSize = 432;
-    const minCellSize = 36;
-    const availableWidth = window.innerWidth * 0.9;
-    const availableHeight = window.innerHeight * 0.7;
-    let size = Math.min(availableWidth, availableHeight, maxBoardSize);
-    if (size / 9 < minCellSize) {
-      size = minCellSize * 9;
-    }
+    const maxBoardSize = 432, minCellSize = 36;
+    const availW = window.innerWidth * 0.9, availH = window.innerHeight * 0.7;
+    let size = Math.min(availW, availH, maxBoardSize);
+    if (size / 9 < minCellSize) size = minCellSize * 9;
     const cellSize = Math.floor(size / 9);
     const boardSize = cellSize * 9;
-
-    // 設定 CSS 變數
     document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
-
-    board.style.width = boardSize + 'px';
-    board.style.height = boardSize + 'px';
+    board.style.width = board.style.height = boardSize + 'px';
     board.style.boxShadow = `inset 0 0 0 ${cellSize}px rgba(0,0,0,0.35)`;
-
-    const lineColor = '#a5d6a7';
-    board.style.backgroundImage = `
-      repeating-linear-gradient(90deg, ${lineColor} 0px, ${lineColor} 1px, transparent 1px, transparent ${cellSize}px),
-      repeating-linear-gradient(0deg, ${lineColor} 0px, ${lineColor} 1px, transparent 1px, transparent ${cellSize}px)
-    `;
+    const lc = '#a5d6a7';
+    board.style.backgroundImage = `repeating-linear-gradient(90deg, ${lc} 0px, ${lc} 1px, transparent 1px, transparent ${cellSize}px), repeating-linear-gradient(0deg, ${lc} 0px, ${lc} 1px, transparent 1px, transparent ${cellSize}px)`;
     board.style.backgroundSize = `${boardSize}px ${boardSize}px`;
-
-    if (typeof CONFIG !== 'undefined') {
-      CONFIG.grid.cellSize = cellSize;
-    }
+    if (typeof CONFIG !== 'undefined') CONFIG.grid.cellSize = cellSize;
   }
-
   window.addEventListener('resize', adjustCellSize);
   window.addEventListener('load', adjustCellSize);
   adjustCellSize();

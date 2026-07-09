@@ -1,38 +1,33 @@
 class Game {
   constructor(config) {
     this.config = config;
-    this.state = 'waiting';   // waiting | playing | gameover | tutorial
+    this.state = 'waiting';
     this.resources = {};
     this.buildings = [];
     this.mice = [];
     this.farmPlots = [];
     this.farmhouse = null;
-    this.mouseHoles = [];        // 內部洞（可被破壞）
-    this.outerHoles = [];        // 外圈洞（不可破壞）
+    this.mouseHoles = [];
+    this.outerHoles = [];
     this.selectedBuildingType = null;
     this.playerData = { gold: 0, purchasedUpgrades: [] };
-
     this.elapsedTime = 0;
     this.killCount = 0;
-    this.farmingCounts = { hay: 1, corn: 1 }; // 種植等級
-
+    this.farmingCounts = { hay: 1, corn: 1 };
     this.timerInterval = null;
     this.outerHoleSpawnInterval = null;
     this.innerHoleSpawnInterval = null;
     this.accidentInterval = null;
     this.gameLoopId = null;
     this.lastTimestamp = 0;
-
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
-    this.cellSize = this.config.grid.cellSize;   // 48
-
+    this.cellSize = this.config.grid.cellSize;
     this.loadPlayerData();
     this.initUI();
     this.renderInitialBoard();
-    this.showTutorialIfNeeded();   // 檢查是否需要顯示教學
+    this.showTutorialIfNeeded();
   }
 
-  // ========== 存檔 ==========
   loadPlayerData() {
     const saved = localStorage.getItem('farmTowerSave');
     if (saved) {
@@ -52,8 +47,6 @@ class Game {
     }));
     this.updateResourceDisplay();
   }
-
-  // ========== 加成計算 ==========
   getGlobalAttackBonus() {
     let bonus = 0;
     for (let id of this.playerData.purchasedUpgrades) {
@@ -74,7 +67,6 @@ class Game {
     return bonus;
   }
 
-  // ========== UI 初始化 ==========
   initUI() {
     this.boardEl = document.getElementById('game-board');
     this.timerEl = document.getElementById('timer');
@@ -85,26 +77,19 @@ class Game {
     this.btnStart = document.getElementById('btn-start');
     this.shopModal = document.getElementById('shop-modal');
     this.resultModal = document.getElementById('result-modal');
-
     this.btnShop.addEventListener('click', () => this.openShop());
     document.getElementById('btn-close-shop').addEventListener('click', () => this.closeShop());
     this.btnStart.addEventListener('click', () => this.startGame());
     document.getElementById('btn-play-again').addEventListener('click', () => this.restartGame());
     this.boardEl.addEventListener('click', (e) => this.onBoardClick(e));
-
-    // 教學彈窗按鈕
     const btnTutorialOk = document.getElementById('btn-tutorial-ok');
-    if (btnTutorialOk) {
-      btnTutorialOk.addEventListener('click', () => this.closeTutorial());
-    }
-
+    if (btnTutorialOk) btnTutorialOk.addEventListener('click', () => this.closeTutorial());
     this.createBuildButtons();
     this.createFarmingButtons();
     this.updateResourceDisplay();
     this.updateShopItems();
   }
 
-  // ========== 右側按鈕：建造防禦（含提示） ==========
   createBuildButtons() {
     this.buildButtonsEl.innerHTML = '';
     for (let key in this.config.buildings) {
@@ -112,39 +97,22 @@ class Game {
       const btn = document.createElement('button');
       btn.textContent = `${b.emoji} ${b.name}`;
       btn.dataset.buildingId = b.id;
-
       let tip = `${b.name}`;
-      if (b.attack > 0) {
-        tip += `\n攻擊力：${b.attack}`;
-        tip += `\n攻擊速度：${b.attackSpeed}/秒`;
-      }
+      if (b.attack > 0) tip += `\n攻擊力：${b.attack}\n攻擊速度：${b.attackSpeed}/秒`;
       if (b.range) tip += `\n攻擊範圍：${b.range} px`;
       let costStr = [];
       for (let res in b.cost) costStr.push(`${this.config.resources[res].emoji} ${b.cost[res]}`);
       tip += `\n消耗：${costStr.join('，')}`;
       if (b.special) tip += `\n特殊：${b.special}`;
-      if (b.effect === 'globalAttack+1' || b.effect === 'globalAttack+2') {
-        tip += `\n效果：全體攻擊 +${b.effect.slice(-1)}`;
-      }
-      if (b.unlocks) {
-        const unlocked = this.config.buildings[b.unlocks];
-        tip += `\n解鎖：${unlocked ? unlocked.name : b.unlocks}`;
-      }
-      if (b.unlockRequirement) {
-        const req = this.config.buildings[b.unlockRequirement];
-        tip += `\n前置建築：${req ? req.name : b.unlockRequirement}`;
-      }
+      if (b.effect === 'globalAttack+1' || b.effect === 'globalAttack+2') tip += `\n效果：全體攻擊 +${b.effect.slice(-1)}`;
+      if (b.unlocks) { const unlocked = this.config.buildings[b.unlocks]; tip += `\n解鎖：${unlocked ? unlocked.name : b.unlocks}`; }
+      if (b.unlockRequirement) { const req = this.config.buildings[b.unlockRequirement]; tip += `\n前置建築：${req ? req.name : b.unlockRequirement}`; }
       btn.title = tip;
-
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectBuilding(b.id);
-      });
+      btn.addEventListener('click', (e) => { e.stopPropagation(); this.selectBuilding(b.id); });
       this.buildButtonsEl.appendChild(btn);
     }
   }
 
-  // ========== 右側按鈕：種植作物 ==========
   createFarmingButtons() {
     this.resourceButtonsEl.innerHTML = '';
     const farming = this.config.farming;
@@ -162,10 +130,7 @@ class Game {
   buyFarming(type) {
     if (this.state !== 'playing') return;
     const farm = this.config.farming[type];
-    if (this.playerData.gold < farm.cost) {
-      this.showMessage('金幣不足');
-      return;
-    }
+    if (this.playerData.gold < farm.cost) { this.showMessage('金幣不足'); return; }
     this.playerData.gold -= farm.cost;
     this.farmingCounts[type] = (this.farmingCounts[type] || 0) + 1;
     this.savePlayerData();
@@ -173,21 +138,15 @@ class Game {
     this.showMessage(`購買了 ${farm.name}！現在每秒 +${farm.perSecond * this.farmingCounts[type]} ${this.config.resources[farm.resource].name}`);
   }
 
-  // 每秒生產 (由計時器觸發)
   produceFarming() {
     let produced = false;
-    if (this.farmingCounts.hay > 0) {
-      this.resources.hay += this.farmingCounts.hay * this.config.farming.hay.perSecond;
-      produced = true;
-    }
+    if (this.farmingCounts.hay > 0) { this.resources.hay += this.farmingCounts.hay * this.config.farming.hay.perSecond; produced = true; }
     if (this.farmingCounts.corn > 0) {
       this.resources.corn += this.farmingCounts.corn * this.config.farming.corn.perSecond;
       this.playerData.gold += this.farmingCounts.corn * (this.config.farming.corn.extraGold || 1);
       produced = true;
     }
-    if (produced) {
-      this.updateResourceDisplay();
-    }
+    if (produced) this.updateResourceDisplay();
   }
 
   selectBuilding(id) {
@@ -199,24 +158,16 @@ class Game {
     this.showMessage(`已選擇 ${this.config.buildings[id].name}，點擊空地建造`);
   }
 
-  // ========== 初始棋盤繪製 ==========
   renderInitialBoard() {
     const level = this.config.infiniteLevel;
     this.resources = { ...level.initialResources };
     const bonus = this.getStartResourceBonus();
     this.resources.hay += bonus.hay;
     this.resources.corn += bonus.corn;
-
     this.clearBoard();
-    this.buildings = [];
-    this.mice = [];
-    this.mouseHoles = [];
-    this.outerHoles = [];
-    this.farmhouse = null;
-    this.selectedBuildingType = null;
+    this.buildings = []; this.mice = []; this.mouseHoles = []; this.outerHoles = [];
+    this.farmhouse = null; this.selectedBuildingType = null;
     this.gridMap = Array(9).fill().map(() => Array(9).fill(null));
-
-    // 繪製農田
     this.farmPlots = level.farmPlots.map(p => ({ ...p }));
     for (let plot of this.farmPlots) {
       this.gridMap[plot.row][plot.col] = 'farmplot';
@@ -227,50 +178,34 @@ class Game {
       cell.textContent = this.config.resources[plot.resource].emoji;
       this.boardEl.appendChild(cell);
     }
-
-    // 繪製農舍
     const fhCfg = level.farmhouse;
-    this.farmhouse = {
-      row: fhCfg.row,
-      col: fhCfg.col,
-      hp: this.config.farmhouse.hp,
-      maxHp: this.config.farmhouse.hp,
-      element: null
-    };
+    this.farmhouse = { row: fhCfg.row, col: fhCfg.col, hp: this.config.farmhouse.hp, maxHp: this.config.farmhouse.hp, element: null };
     this.gridMap[fhCfg.row][fhCfg.col] = 'farmhouse';
     const el = document.createElement('div');
     el.className = 'building farmhouse';
     el.style.left = fhCfg.col * this.cellSize + 'px';
     el.style.top = fhCfg.row * this.cellSize + 'px';
-    el.innerHTML = `<div class="farmhouse-emoji">${this.config.farmhouse.emoji}</div>
-                    <div class="hp-bar-container"><div class="hp-bar-fill" style="width:100%"></div></div>`;
+    el.innerHTML = `<div class="farmhouse-emoji">${this.config.farmhouse.emoji}</div><div class="hp-bar-container"><div class="hp-bar-fill" style="width:100%"></div></div>`;
     this.boardEl.appendChild(el);
     this.farmhouse.element = el;
-
     this.updateResourceDisplay();
     this.updateTimerDisplay();
     this.showMessage('準備好就按下「開始遊戲」！');
     this.resultModal.classList.add('hidden');
   }
 
-  // ========== 開始 / 重新開始 ==========
   startGame() {
-    if (this.state !== 'waiting') return;   // 只有 waiting 狀態才能開始
+    if (this.state !== 'waiting') return;
     this.state = 'playing';
-    this.elapsedTime = 0;
-    this.killCount = 0;
+    this.elapsedTime = 0; this.killCount = 0;
     this.startTimers();
-
     this.btnStart.textContent = '重新開始';
     this.btnStart.removeEventListener('click', this.startGame);
     this.btnStart.addEventListener('click', () => this.restartGame());
-
     this.showMessage('保護農舍！老鼠會破壞一切！');
   }
 
-  clearBoard() {
-    this.boardEl.querySelectorAll('.cell,.building,.mouse,.mouse-hole').forEach(e => e.remove());
-  }
+  clearBoard() { this.boardEl.querySelectorAll('.cell,.building,.mouse,.mouse-hole').forEach(e => e.remove()); }
 
   updateFarmhouseHP() {
     if (!this.farmhouse?.element) return;
@@ -282,49 +217,29 @@ class Game {
   isCellBuildable(row, col) {
     if (row < 0 || row >= 9 || col < 0 || col >= 9) return false;
     if (row === 0 || row === 8 || col === 0 || col === 8) return false;
-    if (this.gridMap[row][col] !== null) return false;
-    return true;
+    return this.gridMap[row][col] === null;
   }
 
   onBoardClick(event) {
     if (this.state !== 'playing' || !this.selectedBuildingType) return;
     const rect = this.boardEl.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const col = Math.floor(x / this.cellSize);
-    const row = Math.floor(y / this.cellSize);
-    if (!this.isCellBuildable(row, col)) {
-      this.showMessage('此格無法建造');
-      return;
-    }
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const col = Math.floor(x / this.cellSize), row = Math.floor(y / this.cellSize);
+    if (!this.isCellBuildable(row, col)) { this.showMessage('此格無法建造'); return; }
     this.tryBuild(this.selectedBuildingType, row, col);
   }
 
   tryBuild(buildingId, row, col) {
     const def = this.config.buildings[buildingId];
     if (!def) return;
-    if (def.unlockRequirement) {
-      if (!this.buildings.some(b => b.type === def.unlockRequirement)) {
-        this.showMessage(`需要先建造 ${this.config.buildings[def.unlockRequirement].name}`);
-        return;
-      }
+    if (def.unlockRequirement && !this.buildings.some(b => b.type === def.unlockRequirement)) {
+      this.showMessage(`需要先建造 ${this.config.buildings[def.unlockRequirement].name}`); return;
     }
     for (let res in def.cost) {
-      if ((this.resources[res] || 0) < def.cost[res]) {
-        this.showMessage(`${this.config.resources[res].name}不足`);
-        return;
-      }
+      if ((this.resources[res] || 0) < def.cost[res]) { this.showMessage(`${this.config.resources[res].name}不足`); return; }
     }
     for (let res in def.cost) this.resources[res] -= def.cost[res];
-
-    const building = {
-      type: buildingId,
-      row, col,
-      hp: def.hp,
-      maxHp: def.hp,
-      lastAttackTime: 0,
-      element: null
-    };
+    const building = { type: buildingId, row, col, hp: def.hp, maxHp: def.hp, lastAttackTime: 0, element: null };
     this.buildings.push(building);
     this.gridMap[row][col] = 'building';
     this.placeBuildingElement(building);
@@ -339,7 +254,6 @@ class Game {
     el.style.left = building.col * this.cellSize + 'px';
     el.style.top = building.row * this.cellSize + 'px';
     el.textContent = def.emoji;
-
     if (def.attack > 0) {
       const rangeEl = document.createElement('div');
       rangeEl.className = 'range-indicator';
@@ -347,19 +261,12 @@ class Game {
       rangeEl.style.height = def.range * 2 + 'px';
       el.appendChild(rangeEl);
     }
-
     this.boardEl.appendChild(el);
     building.element = el;
   }
 
-  // ========== 計時器與生成 ==========
   startTimers() {
-    this.timerInterval = setInterval(() => {
-      this.elapsedTime++;
-      this.updateTimerDisplay();
-      this.produceFarming();
-    }, 1000);
-
+    this.timerInterval = setInterval(() => { this.elapsedTime++; this.updateTimerDisplay(); this.produceFarming(); }, 1000);
     this.startOuterHoleSpawn();
     this.startInnerHoleSpawning();
     this.accidentInterval = setInterval(() => this.checkAccidentalDamage(), 10000);
@@ -375,39 +282,20 @@ class Game {
     if (this.gameLoopId) cancelAnimationFrame(this.gameLoopId);
     for (let hole of this.outerHoles) if (hole.intervalId) clearInterval(hole.intervalId);
     for (let hole of this.mouseHoles) if (hole.intervalId) clearInterval(hole.intervalId);
-    this.timerInterval = null;
-    this.outerHoleSpawnInterval = null;
-    this.innerHoleSpawnInterval = null;
-    this.accidentInterval = null;
-    this.gameLoopId = null;
+    this.timerInterval = this.outerHoleSpawnInterval = this.innerHoleSpawnInterval = this.accidentInterval = this.gameLoopId = null;
   }
 
-  // --- 外圈洞生成 (不可破壞) ---
   startOuterHoleSpawn() {
     if (this.outerHoleSpawnInterval) clearInterval(this.outerHoleSpawnInterval);
-    const interval = this.config.infiniteLevel.outerHoleSpawnInterval * 1000;
-    this.outerHoleSpawnInterval = setInterval(() => {
-      if (this.state !== 'playing') return;
-      this.trySpawnOuterHole();
-    }, interval);
+    this.outerHoleSpawnInterval = setInterval(() => { if (this.state === 'playing') this.trySpawnOuterHole(); }, this.config.infiniteLevel.outerHoleSpawnInterval * 1000);
   }
 
   trySpawnOuterHole() {
-    const max = this.config.infiniteLevel.outerHoleMax;
-    if (this.outerHoles.length >= max) return;
-
+    if (this.outerHoles.length >= this.config.infiniteLevel.outerHoleMax) return;
     const candidates = [];
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (r === 0 || r === 8 || c === 0 || c === 8) {
-          if (!this.outerHoles.some(h => h.row === r && h.col === c)) {
-            candidates.push({ row: r, col: c });
-          }
-        }
-      }
-    }
-    if (candidates.length === 0) return;
-    const pos = candidates[Math.floor(Math.random() * candidates.length)];
+    for (let r=0; r<9; r++) for (let c=0; c<9; c++) if ((r===0||r===8||c===0||c===8) && !this.outerHoles.some(h=>h.row===r&&h.col===c)) candidates.push({row:r, col:c});
+    if (!candidates.length) return;
+    const pos = candidates[Math.floor(Math.random()*candidates.length)];
     this.createOuterHole(pos.row, pos.col);
   }
 
@@ -415,46 +303,24 @@ class Game {
     const holeCfg = this.config.mouseHole;
     const hole = { row, col, intervalId: null, element: null };
     this.outerHoles.push(hole);
-
-    const el = document.createElement('div');
-    el.className = 'mouse-hole outer-hole';
-    el.style.left = col * this.cellSize + 'px';
-    el.style.top = row * this.cellSize + 'px';
-    el.textContent = holeCfg.emoji;
-    this.boardEl.appendChild(el);
-    hole.element = el;
-
-    hole.intervalId = setInterval(() => {
-      if (this.state !== 'playing') return;
-      this.spawnMouseAt(row, col, 'normal');
-    }, holeCfg.spawnInterval * 1000);
+    const el = document.createElement('div'); el.className = 'mouse-hole outer-hole';
+    el.style.left = col*this.cellSize+'px'; el.style.top = row*this.cellSize+'px';
+    el.textContent = holeCfg.emoji; this.boardEl.appendChild(el); hole.element = el;
+    hole.intervalId = setInterval(() => { if (this.state==='playing') this.spawnMouseAt(row, col, 'normal'); }, holeCfg.spawnInterval*1000);
   }
 
-  // --- 內部洞生成 (僅當外圈洞滿) ---
   startInnerHoleSpawning() {
     if (this.innerHoleSpawnInterval) clearInterval(this.innerHoleSpawnInterval);
-    const interval = this.config.infiniteLevel.innerHoleSpawnInterval * 1000;
-    this.innerHoleSpawnInterval = setInterval(() => {
-      if (this.state !== 'playing') return;
-      this.trySpawnInnerHole();
-    }, interval);
+    this.innerHoleSpawnInterval = setInterval(() => { if (this.state==='playing') this.trySpawnInnerHole(); }, this.config.infiniteLevel.innerHoleSpawnInterval*1000);
   }
 
   trySpawnInnerHole() {
     if (this.outerHoles.length < this.config.infiniteLevel.outerHoleMax) return;
-    const max = this.config.infiniteLevel.innerHoleMax;
-    if (this.mouseHoles.length >= max) return;
-
+    if (this.mouseHoles.length >= this.config.infiniteLevel.innerHoleMax) return;
     const empty = [];
-    for (let r = 1; r <= 7; r++) {
-      for (let c = 1; c <= 7; c++) {
-        if (this.gridMap[r][c] === null && !this.mouseHoles.some(h => h.row === r && h.col === c)) {
-          empty.push({ row: r, col: c });
-        }
-      }
-    }
-    if (empty.length === 0) return;
-    const pos = empty[Math.floor(Math.random() * empty.length)];
+    for (let r=1; r<=7; r++) for (let c=1; c<=7; c++) if (this.gridMap[r][c]===null && !this.mouseHoles.some(h=>h.row===r&&h.col===c)) empty.push({row:r, col:c});
+    if (!empty.length) return;
+    const pos = empty[Math.floor(Math.random()*empty.length)];
     this.createInnerHole(pos.row, pos.col);
   }
 
@@ -463,113 +329,76 @@ class Game {
     const hole = { row, col, hp: holeCfg.hp, maxHp: holeCfg.hp, element: null };
     this.mouseHoles.push(hole);
     this.gridMap[row][col] = 'mousehole';
-    const el = document.createElement('div');
-    el.className = 'mouse-hole';
-    el.style.left = col * this.cellSize + 'px';
-    el.style.top = row * this.cellSize + 'px';
-    el.textContent = holeCfg.emoji;
-    this.boardEl.appendChild(el);
-    hole.element = el;
-
+    const el = document.createElement('div'); el.className = 'mouse-hole';
+    el.style.left = col*this.cellSize+'px'; el.style.top = row*this.cellSize+'px';
+    el.textContent = holeCfg.emoji; this.boardEl.appendChild(el); hole.element = el;
     hole.intervalId = setInterval(() => {
-      if (this.state !== 'playing') return;
-      if (hole.hp <= 0) { clearInterval(hole.intervalId); return; }
+      if (this.state!=='playing') return;
+      if (hole.hp<=0) { clearInterval(hole.intervalId); return; }
       this.spawnMouseAt(row, col, 'normal');
-    }, holeCfg.spawnInterval * 1000);
+    }, holeCfg.spawnInterval*1000);
   }
 
   removeInnerHole(hole) {
     const idx = this.mouseHoles.indexOf(hole);
     if (idx > -1) {
-      clearInterval(hole.intervalId);
-      if (hole.element) hole.element.remove();
-      if (this.gridMap[hole.row][hole.col] === 'mousehole') this.gridMap[hole.row][hole.col] = null;
-      this.mouseHoles.splice(idx, 1);
+      clearInterval(hole.intervalId); hole.element?.remove();
+      if (this.gridMap[hole.row][hole.col]==='mousehole') this.gridMap[hole.row][hole.col]=null;
+      this.mouseHoles.splice(idx,1);
     }
   }
 
-  // ========== 老鼠生成與移動 ==========
   spawnMouseAt(row, col, type) {
     const baseDef = this.config.infiniteLevel.spawn[type];
     if (!baseDef) return;
-    const minutes = this.elapsedTime / 60;
-    const hpBonus = Math.floor(this.config.infiniteLevel.difficultyScale.hpIncreasePerMinute * minutes);
-    const speedBonus = this.config.infiniteLevel.difficultyScale.speedIncreasePerMinute * minutes;
-
-    const start = { row, col };
-    const end = { row: this.farmhouse.row, col: this.farmhouse.col };
+    const min = this.elapsedTime/60;
+    const hpBonus = Math.floor(this.config.infiniteLevel.difficultyScale.hpIncreasePerMinute*min);
+    const spdBonus = this.config.infiniteLevel.difficultyScale.speedIncreasePerMinute*min;
+    const start = {row, col}, end = {row:this.farmhouse.row, col:this.farmhouse.col};
     const path = this.findPath(start, end);
-    if (path.length === 0) return;
-
+    if (!path.length) return;
     const mouse = {
-      type,
-      row, col,
-      x: col * this.cellSize + this.cellSize / 2,
-      y: row * this.cellSize + this.cellSize / 2,
-      hp: baseDef.hp + hpBonus,
-      maxHp: baseDef.hp + hpBonus,
-      speed: baseDef.speed + speedBonus,
-      path,
-      pathIndex: 0,
-      state: 'moving',
-      attackTarget: null,
-      attackTimer: 0,
-      element: null
+      type, row, col,
+      x: col*this.cellSize + this.cellSize/2, y: row*this.cellSize + this.cellSize/2,
+      hp: baseDef.hp + hpBonus, maxHp: baseDef.hp + hpBonus,
+      speed: baseDef.speed + spdBonus,
+      path, pathIndex:0, state:'moving', attackTarget:null, attackTimer:0, element:null
     };
     this.mice.push(mouse);
     this.createMouseElement(mouse);
   }
 
   findPath(start, end) {
-    if (start.row === end.row && start.col === end.col) return [];
-    const queue = [[start]];
-    const visited = new Set();
+    if (start.row===end.row && start.col===end.col) return [];
+    const q = [[start]], visited = new Set();
     visited.add(`${start.row},${start.col}`);
-    while (queue.length > 0) {
-      const path = queue.shift();
-      const cur = path[path.length - 1];
-      const neighbors = [
-        { row: cur.row - 1, col: cur.col },
-        { row: cur.row + 1, col: cur.col },
-        { row: cur.row, col: cur.col - 1 },
-        { row: cur.row, col: cur.col + 1 }
-      ];
-      for (let n of neighbors) {
-        if (n.row < 0 || n.row >= 9 || n.col < 0 || n.col >= 9) continue;
-        if (n.row === end.row && n.col === end.col) {
-          return path.slice(1).concat([{ row: n.row, col: n.col }]);
-        }
-        const key = `${n.row},${n.col}`;
-        if (!visited.has(key)) {
-          visited.add(key);
-          queue.push([...path, { row: n.row, col: n.col }]);
-        }
+    while (q.length) {
+      const path = q.shift(), cur = path[path.length-1];
+      const nb = [{row:cur.row-1,col:cur.col},{row:cur.row+1,col:cur.col},{row:cur.row,col:cur.col-1},{row:cur.row,col:cur.col+1}];
+      for (let n of nb) {
+        if (n.row<0||n.row>=9||n.col<0||n.col>=9) continue;
+        if (n.row===end.row && n.col===end.col) return path.slice(1).concat([{row:n.row, col:n.col}]);
+        const k = `${n.row},${n.col}`;
+        if (!visited.has(k)) { visited.add(k); q.push([...path, {row:n.row, col:n.col}]); }
       }
     }
     return [];
   }
 
   createMouseElement(mouse) {
-    const el = document.createElement('div');
-    el.className = 'mouse';
-    el.textContent = '🐭';
-    el.style.left = mouse.x + 'px';
-    el.style.top = mouse.y + 'px';
-    this.boardEl.appendChild(el);
-    mouse.element = el;
+    const el = document.createElement('div'); el.className = 'mouse';
+    el.textContent = '🐭'; el.style.left = mouse.x+'px'; el.style.top = mouse.y+'px';
+    this.boardEl.appendChild(el); mouse.element = el;
   }
 
-  // ========== 遊戲循環 ==========
   gameLoop(now) {
-    if (this.state !== 'playing') return;
-    const delta = Math.min((now - this.lastTimestamp) / 1000, 0.1);
+    if (this.state!=='playing') return;
+    const delta = Math.min((now-this.lastTimestamp)/1000, 0.1);
     this.lastTimestamp = now;
-
     this.updateMice(delta);
     this.buildingAttack(now);
     this.ferretClearInnerHoles(now);
-
-    this.gameLoopId = requestAnimationFrame((t) => this.gameLoop(t));
+    this.gameLoopId = requestAnimationFrame((t)=>this.gameLoop(t));
   }
 
   updateMice(delta) {

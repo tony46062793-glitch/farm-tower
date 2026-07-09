@@ -66,18 +66,18 @@ body {
   border-radius: 8px;
   overflow: hidden;
   cursor: crosshair;
-  /* 尺寸由 JS 設定 */
 }
 
-/* 所有棋盤元素的尺寸由 --cell-size 控制 */
+/* 所有棋盤元素的尺寸由 --cell-size 控制，且必須絕對定位 */
 .cell, .building, .mouse-hole {
+  position: absolute;
   width: var(--cell-size);
   height: var(--cell-size);
 }
 .cell {
   display: flex; justify-content: center; align-items: center;
   pointer-events: none;
-  font-size: calc(var(--cell-size) * 0.55); /* emoji 大小隨格子縮放 */
+  font-size: calc(var(--cell-size) * 0.55);
 }
 .building {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -93,7 +93,7 @@ body {
   font-size: calc(var(--cell-size) * 0.55);
 }
 
-/* 農舍：特殊樣式，但尺寸一樣依變數 */
+/* 農舍特殊樣式，但一樣依賴 .building 的尺寸 */
 .farmhouse {
   background: rgba(255, 215, 0, 0.3);
   border-radius: 8px;
@@ -113,7 +113,7 @@ body {
   transition: width 0.2s;
 }
 
-/* 攻擊範圍指示器：範圍為 config 中的像素，由 JS 設定，保留不變 */
+/* 攻擊範圍指示器（尺寸由 JS 設定，保持 pixel） */
 .range-indicator {
   position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
@@ -128,7 +128,7 @@ body {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 3; pointer-events: none;
-  font-size: calc(var(--cell-size) * 0.5); /* 老鼠大小也隨格子 */
+  font-size: calc(var(--cell-size) * 0.5);
 }
 
 /* 右側按鈕區 */
@@ -276,7 +276,36 @@ button.selected {
   </div>
 </div>
 
-<!-- 彈窗略，與之前相同 -->
+<!-- 彈窗內容與之前相同，此處省略，請複製你現有的三個彈窗 HTML -->
+<div id="shop-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>🛒 升級商店</h2>
+    <div id="shop-items"></div>
+    <button id="btn-close-shop">關閉</button>
+  </div>
+</div>
+
+<div id="result-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="result-title">😵 任務失敗…</h2>
+    <p id="result-detail" style="margin:16px 0; line-height:1.6; color:#5d4037;"></p>
+    <button id="btn-play-again" class="action-btn">再來一局</button>
+  </div>
+</div>
+
+<div id="tutorial-modal" class="modal hidden">
+  <div class="modal-content" style="text-align: left; line-height: 1.8;">
+    <h2>🌾 歡迎來到農夫守塔！</h2>
+    <p>📌 <strong>遊戲目標</strong>：在買到通關證明前，保護中央的農舍不被老鼠摧毀。</p>
+    <p>🛡️ <strong>如何防守</strong>：消耗資源建造防禦建築，牠們會自動攻擊路過的老鼠。</p>
+    <p>🐭 <strong>老鼠行為</strong>：老鼠會沿著最短路徑前進，並摧毀沿途的建築與農田，直到撞擊農舍。</p>
+    <p>🕳️ <strong>老鼠洞</strong>：外圈暗色區域會逐漸出現老鼠洞（最多 4 個）。當外圈滿 4 個後，內部白色區域也會開始出現可破壞的鼠洞，只有「貂洞」能清除牠們。</p>
+    <p>💰 <strong>資源與種植</strong>：使用金幣在右側種植作物，每秒自動產出資源與金幣，幫助你持續防禦。</p>
+    <p style="margin-top: 16px; text-align: center;">
+      <button id="btn-tutorial-ok" class="action-btn" style="font-size: 16px;">我知道了，開始遊戲！</button>
+    </p>
+  </div>
+</div>
 
 <script src="config.js"></script>
 <script src="game.js"></script>
